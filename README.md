@@ -13,3 +13,4 @@ how to run VCF Inspector?
 3. in docker container, run
         `python VCF_Inspector.py`
 
+# vcf_inspector
