@@ -3,7 +3,8 @@
 how to run VCF Inspector?
 
 **directly**:
-`python VCF_Inspector.py`
+First, install the libraries needed. See in requirements.txt
+	`python VCF_Inspector.py`
 
 **docker**:
 1.  create docker image
@@ -13,4 +14,15 @@ how to run VCF Inspector?
 3. in docker container, run
         `python VCF_Inspector.py`
 
-# vcf_inspector
+**compute1**
+4. git the code from github
+		`git clone https://github.com/Brave-banana/vcf_inspector.git && cd vcf_inspector`
+5. Set the `LSF_DOCKER_VOLUMES` environment variable to mount the location of  files
+	`export LSF_DOCKER_VOLUMES="/storage1/fs1/dinglab/Active/:/storage1/fs1/dinglab/Active/ /storage1/fs1/m.wyczalkowski/Active/:/storage1/fs1/m.wyczalkowski/Active/"`
+6. submit through `bsub` (Notoce that this step should under directory `vcf_inspector`)
+		`LSF_DOCKER_PORTS="8080:8080" bsub -Is -R "select[port8080=1]" -q general-interactive -a 'docker(bravebanana/vcf_inspector)' /bin/bash`
+7. Run vcf_inspector
+	`python VCF_Inspector.py`
+8. Access the host's 8080 port to use. The host's ip address will be displayed on the terminal. For example，address + port should be like:
+	http://compute1-exec-187.compute.ris.wustl.edu:8080/
+
