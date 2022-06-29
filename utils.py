@@ -4,8 +4,10 @@ import re
 
 
 def venn_diagram(file1, file2, caller):
-    out1 = 'dat/' + file1.split('/')[6] + '.txt'
-    out2 = 'dat/' + file2.split('/')[6] + '.txt'
+    # out1 = 'dat/' + file1.split('/')[6] + '.txt'
+    # out2 = 'dat/' + file2.split('/')[6] + '.txt'
+    out1 = 'dat/' + file1[1:-3].replace('/','_')+'txt'
+    out2 = 'dat/' + file2[1:-3].replace('/','_')+'txt'
     if not os.path.exists(out1):
         os.system('grep -v "^#" ' + file1 + ' | cut -f 1,2,7 | sort > ' + out1)
     if not os.path.exists(out2):
@@ -58,7 +60,8 @@ def set_details(caller):
 def chart(filedict):
     df_res = pd.DataFrame(columns=['name', 'PASS', 'af', 'dbsnp', 'ffpe', 'merge', 'proximity','total'])
     for name, path in filedict.items():
-        out = 'dat/' + path.split('/')[6] + '.txt'
+        # out = 'dat/' + path.split('/')[6] + '.txt'
+        out = 'dat/' + path[1:-3].replace('/','_')+'txt'
         df = pd.read_table(out, header=None)
         total = len(df)
         pass_number = len(df[df[2].str.contains('PASS')])
