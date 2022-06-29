@@ -62,6 +62,8 @@ def chart(filedict):
     for name, path in filedict.items():
         # out = 'dat/' + path.split('/')[6] + '.txt'
         out = 'dat/' + path[1:-3].replace('/','_')+'txt'
+        if not os.path.exists(out):
+            os.system('grep -v "^#" ' + path + ' | cut -f 1,2,7 | sort > ' + out)
         df = pd.read_table(out, header=None)
         total = len(df)
         pass_number = len(df[df[2].str.contains('PASS')])
