@@ -62,8 +62,7 @@ def chart(filedict):
     for name, path in filedict.items():
         # out = 'dat/' + path.split('/')[6] + '.txt'
         out = 'dat/' + path[1:-3].replace('/','_')+'txt'
-        if not os.path.exists(out):
-            os.system('grep -v "^#" ' + path + ' | cut -f 1,2,7 | sort > ' + out)
+
         df = pd.read_table(out, header=None)
         total = len(df)
         pass_number = len(df[df[2].str.contains('PASS')])
@@ -84,8 +83,8 @@ def get_filters_dict(vcf_file1, vcf_file2):
     """
     Read two vcf files to get all the filters and their description
 
-    :param vcf_file2: Path to a vcf file 1.
-    :param vcf_file1: Path to a vcf file 2.
+    :param vcf_file2: Path to a filtered vcf file 1.
+    :param vcf_file1: Path to a filtered vcf file 2.
     :return: dict of all filters and description
     :rtype: dict
     """
@@ -117,12 +116,6 @@ def get_used_filters(path1, path2):
     :return: all the filters used in this two vcf files
     :rtype: list
     """
-    out1 = 'dat/' + path1[1:-3].replace('/', '_') + 'txt'
-    out2 = 'dat/' + path2[1:-3].replace('/', '_') + 'txt'
-    if not os.path.exists(out1):
-        os.system('grep -v "^#" ' + path1 + ' | cut -f 1,2,7 | sort > ' + out1)
-    if not os.path.exists(out2):
-        os.system('grep -v "^#" ' + path2 + ' | cut -f 1,2,7 | sort > ' + out2)
     dfA = pd.read_table(path1, header=None)
     dfB = pd.read_table(path2, header=None)
     filters = []
@@ -137,3 +130,10 @@ def get_used_filters(path1, path2):
                 filters.append(item)
 
     return ['vcf_all'] + filters
+
+
+def data_prepare(filedict):
+    for name, path in filedict.items():
+        out = 'dat/' + path[1:-3].replace('/', '_') + 'txt'
+        if not os.path.exists(out):
+            os.system('grep -v "^#" ' + path + ' | cut -f 1,2,7 | sort > ' + out)

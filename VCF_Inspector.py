@@ -1,7 +1,7 @@
 from dash import Dash, html, dcc, Input, Output, State, dash_table, callback
 import pandas as pd
 import plotly.express as px
-from utils import venn_diagram, chart, get_filters_dict, get_used_filters
+from utils import venn_diagram, chart, get_filters_dict, get_used_filters, data_prepare
 import plotly.graph_objects as go
 from dash.dash_table.Format import Format, Scheme, Trim
 import os
@@ -18,7 +18,7 @@ filedict = {'CTSP-AD3X_RunA': '/storage1/fs1/m.wyczalkowski/Active/cromwell-data
             'CTSP-AD3X_RunB': '/storage1/fs1/m.wyczalkowski/Active/cromwell-data/cromwell-workdir/cromwell-executions'
                               '/tindaisy2.ffpe.cwl/0f45d954-d951-4927-a2ba-476e319a6a88/call'
                               '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf'}
-my_output = html.Div(style={'width': '95%'})
+# my_output = html.Div(style={'width': '95%'})
 
 app = Dash(__name__)
 
@@ -115,7 +115,8 @@ app.layout = html.Div([
     # chart
     html.Div([
         html.H4(children='Chart of all VCF files:'),
-        my_output
+        # my_output
+        html.Div(id='my_output',style={'width': '95%'}),
         # html.Div([
         #     dash_table.DataTable(id='chart')
         #     # html.Table(
@@ -243,7 +244,7 @@ def update_name2(n_clicks):
 
 
 @callback(
-    Output(my_output, component_property='children'),
+    Output('my_output', component_property='children'),
     Input('submit-val', 'n_clicks'))
 def update_chart(n_clicks):
     df_res = chart(filedict)
@@ -301,4 +302,5 @@ def update_description(name1, name2, options):
 
 
 if __name__ == '__main__':
+    data_prepare(filedict)
     app.run_server(host='0.0.0.0', port=8080, debug=True)
