@@ -6,18 +6,18 @@ import plotly.graph_objects as go
 from dash.dash_table.Format import Format, Scheme, Trim
 import os
 
-# on katmai
-filedict = {'CTSP-AD3X_RunA': '/diskmnt/Projects/Users/chen.xiangyu/dash/b17d5672-572f-463b-88ad-0ac7b06156ad/call'
-                              '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf',
-            'CTSP-AD3X_RunB': '/diskmnt/Projects/Users/chen.xiangyu/dash/0f45d954-d951-4927-a2ba-476e319a6a88/call'
-                              '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf'}
-# # on compute1
-# filedict = {'CTSP-AD3X_RunA': '/storage1/fs1/m.wyczalkowski/Active/cromwell-data/cromwell-workdir/cromwell-executions'
-#                               '/tindaisy2.ffpe.cwl/b17d5672-572f-463b-88ad-0ac7b06156ad/call'
+# # on katmai
+# filedict = {'CTSP-AD3X_RunA': '/diskmnt/Projects/Users/chen.xiangyu/dash/b17d5672-572f-463b-88ad-0ac7b06156ad/call'
 #                               '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf',
-#             'CTSP-AD3X_RunB': '/storage1/fs1/m.wyczalkowski/Active/cromwell-data/cromwell-workdir/cromwell-executions'
-#                               '/tindaisy2.ffpe.cwl/0f45d954-d951-4927-a2ba-476e319a6a88/call'
+#             'CTSP-AD3X_RunB': '/diskmnt/Projects/Users/chen.xiangyu/dash/0f45d954-d951-4927-a2ba-476e319a6a88/call'
 #                               '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf'}
+# on compute1
+filedict = {'CTSP-AD3X_RunA': '/storage1/fs1/m.wyczalkowski/Active/cromwell-data/cromwell-workdir/cromwell-executions'
+                              '/tindaisy2.ffpe.cwl/b17d5672-572f-463b-88ad-0ac7b06156ad/call'
+                              '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf',
+            'CTSP-AD3X_RunB': '/storage1/fs1/m.wyczalkowski/Active/cromwell-data/cromwell-workdir/cromwell-executions'
+                              '/tindaisy2.ffpe.cwl/0f45d954-d951-4927-a2ba-476e319a6a88/call'
+                              '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf'}
 my_output = html.Div(style={'width': '95%'})
 
 app = Dash(__name__)
