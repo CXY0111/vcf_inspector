@@ -1,13 +1,23 @@
 import pandas as pd
 import os
 import re
+import json
 
 
 def venn_diagram(file1, file2, caller):
+    """
+        get the venn diagram numbers(uniqueA,common,uniqueB) given the two vcf files
+
+        :param file1: path to vcf file1
+        :param file2: path to vcf file2
+        :param caller: compare the variants with the selected filter
+        :return: common number, uniqueA number, uniqueB number
+        :rtype: int
+        """
     # out1 = 'dat/' + file1.split('/')[6] + '.txt'
     # out2 = 'dat/' + file2.split('/')[6] + '.txt'
-    out1 = 'dat/' + file1[1:-3].replace('/','_')+'txt'
-    out2 = 'dat/' + file2[1:-3].replace('/','_')+'txt'
+    out1 = 'dat/' + file1[1:-3].replace('/', '_') + 'txt'
+    out2 = 'dat/' + file2[1:-3].replace('/', '_') + 'txt'
     if not os.path.exists(out1):
         os.system('grep -v "^#" ' + file1 + ' | cut -f 1,2,7 | sort > ' + out1)
     if not os.path.exists(out2):
@@ -33,7 +43,7 @@ def venn_diagram(file1, file2, caller):
            len(dfA_filter.merge(dfB_filter, indicator=True, how='right').loc[lambda x: x['_merge'] != 'both'])
 
 
-# caller = ['af', 'dbsnp', 'ffpe', 'merge', 'PASS', 'proximity']
+# # caller = ['af', 'dbsnp', 'ffpe', 'merge', 'PASS', 'proximity']
 def set_details(caller):
     if not os.path.exists('RunA.txt') and not os.path.exists('RunB.txt'):
         root = '/diskmnt/Projects/Users/chen.xiangyu/dash/'
@@ -58,10 +68,17 @@ def set_details(caller):
 
 
 def chart(filedict):
-    df_res = pd.DataFrame(columns=['name', 'PASS', 'af', 'dbsnp', 'ffpe', 'merge', 'proximity','total'])
+    """
+        get the distribution of each vcf file in the file dict
+
+        :param filedict: filedict that contains all the vcf files
+        :return: df of the distribution
+        :rtype: dataframe
+        """
+    df_res = pd.DataFrame(columns=['name', 'PASS', 'af', 'dbsnp', 'ffpe', 'merge', 'proximity', 'total'])
     for name, path in filedict.items():
         # out = 'dat/' + path.split('/')[6] + '.txt'
-        out = 'dat/' + path[1:-3].replace('/','_')+'txt'
+        out = 'dat/' + path[1:-3].replace('/', '_') + 'txt'
 
         df = pd.read_table(out, header=None)
         total = len(df)
@@ -75,7 +92,7 @@ def chart(filedict):
         df_res = df_res.append(
             {'name': name, 'PASS': pass_number / total, 'af': af_number / total, 'dbsnp': dbsnp_number / total,
              'ffpe': ffpe_number / total, 'merge': merge_number / total,
-             'proximity': proximity_number / total,'total': total}, ignore_index=True)
+             'proximity': proximity_number / total, 'total': total}, ignore_index=True)
     return df_res
 
 
@@ -101,7 +118,8 @@ def get_filters_dict(vcf_file1, vcf_file2):
             if line.startswith('#'):
                 if 'FILTER=' in line:
                     str1 = re.findall('<([^】]+)>', line)[0]
-                    if (str1.split(',')[0].split('=')[1], str1.split(',')[1].split('=')[1][1:-1]) not in vcf_dict.items():
+                    if (
+                    str1.split(',')[0].split('=')[1], str1.split(',')[1].split('=')[1][1:-1]) not in vcf_dict.items():
                         vcf_dict[str1.split(',')[0].split('=')[1]] = str1.split(',')[1].split('=')[1][1:-1]
 
     return vcf_dict
@@ -133,7 +151,26 @@ def get_used_filters(path1, path2):
 
 
 def data_prepare(filedict):
+    """
+        prepare the data to be used.
+
+        :param filedict: filedict that contains all the vcf files
+        :return: None
+        :rtype: None
+        """
     for name, path in filedict.items():
         out = 'dat/' + path[1:-3].replace('/', '_') + 'txt'
         if not os.path.exists(out):
             os.system('grep -v "^#" ' + path + ' | cut -f 1,2,7 | sort > ' + out)
+
+
+def save_filedict(filedict):
+    filename = 'stored_vcf_filedict.json'
+    with open(filename, 'w') as f:
+        f.write(json.dumps(filedict))
+
+
+def load_filedict(filename):
+    with open(filename) as f:
+        filedict = json.loads(f.read())
+    return filedict
