@@ -4,9 +4,9 @@ how to run VCF Inspector?
 
 **directly**:
 First, install the libraries needed. See in requirements.txt
-	```
-	python VCF_Inspector.py
-	```
+```
+python VCF_Inspector.py
+```
 
 **docker**:
 1.  create docker image
