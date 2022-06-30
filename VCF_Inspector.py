@@ -1,26 +1,35 @@
 from dash import Dash, html, dcc, Input, Output, State, dash_table, callback
 import pandas as pd
 import plotly.express as px
-from utils import venn_diagram, chart, get_filters_dict, get_used_filters, data_prepare
+from utils import venn_diagram, chart, get_filters_dict, get_used_filters, data_prepare, save_filedict, load_filedict
 import plotly.graph_objects as go
 from dash.dash_table.Format import Format, Scheme, Trim
-import copy
+import json
 import os
 
-# on katmai
-filedict = {'CTSP-AD3X_RunA': '/diskmnt/Projects/Users/chen.xiangyu/dash/b17d5672-572f-463b-88ad-0ac7b06156ad/call'
-                              '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf',
-            'CTSP-AD3X_RunB': '/diskmnt/Projects/Users/chen.xiangyu/dash/0f45d954-d951-4927-a2ba-476e319a6a88/call'
-                              '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf'}
-# # on compute1
-# filedict = {'CTSP-AD3X_RunA': '/storage1/fs1/m.wyczalkowski/Active/cromwell-data/cromwell-workdir/cromwell-executions'
-#                               '/tindaisy2.ffpe.cwl/b17d5672-572f-463b-88ad-0ac7b06156ad/call'
-#                               '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf',
-#             'CTSP-AD3X_RunB': '/storage1/fs1/m.wyczalkowski/Active/cromwell-data/cromwell-workdir/cromwell-executions'
-#                               '/tindaisy2.ffpe.cwl/0f45d954-d951-4927-a2ba-476e319a6a88/call'
-#                               '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf'}
-
 app = Dash(__name__)
+# # on katmai
+# filedict = {'CTSP-AD3X_RunA': '/diskmnt/Projects/Users/chen.xiangyu/dash/b17d5672-572f-463b-88ad-0ac7b06156ad/call'
+#                               '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf',
+#             'CTSP-AD3X_RunB': '/diskmnt/Projects/Users/chen.xiangyu/dash/0f45d954-d951-4927-a2ba-476e319a6a88/call'
+#                               '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf'}
+# on compute1
+filedict = {'CTSP-AD3X_RunA': '/storage1/fs1/m.wyczalkowski/Active/cromwell-data/cromwell-workdir/cromwell-executions'
+                              '/tindaisy2.ffpe.cwl/b17d5672-572f-463b-88ad-0ac7b06156ad/call'
+                              '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf',
+            'CTSP-AD3X_RunB': '/storage1/fs1/m.wyczalkowski/Active/cromwell-data/cromwell-workdir/cromwell-executions'
+                              '/tindaisy2.ffpe.cwl/0f45d954-d951-4927-a2ba-476e319a6a88/call'
+                              '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf'}
+# save filedict to json
+filename = 'stored_vcf_filedict.json'
+with open(filename, 'w') as f:
+    f.write(json.dumps(filedict))
+# first, prepare the data
+data_prepare(filedict)
+
+
+
+
 
 app.layout = html.Div([
     # title
@@ -62,7 +71,7 @@ app.layout = html.Div([
 
         html.Div([
             dcc.Dropdown(
-                list(filedict.keys()),
+                list(load_filedict('stored_vcf_filedict.json').keys()),
                 'CTSP-AD3X_RunA',
                 id='name1',
             ),
@@ -74,7 +83,7 @@ app.layout = html.Div([
 
         html.Div([
             dcc.Dropdown(
-                list(filedict.keys()),
+                list(load_filedict('stored_vcf_filedict.json').keys()),
                 'CTSP-AD3X_RunB',
                 id='name2',
             ),
@@ -135,7 +144,7 @@ app.layout = html.Div([
     Input('name2', 'value'),
     Input('caller', 'value'))
 def update_graph(name1, name2, caller):
-    com, ua, ub = venn_diagram(filedict[name1], filedict[name2], caller)
+    com, ua, ub = venn_diagram(load_filedict('stored_vcf_filedict.json')[name1], load_filedict('stored_vcf_filedict.json')[name2], caller)
 
     fig = go.Figure()
 
@@ -192,22 +201,25 @@ def add_new_vcf(filename, path, n_clicks):
     tmp = u'''
             The Button has been pressed {} times,nothing has been added.
         '''.format(n_clicks)
-    if n_clicks >= 1:
-        if os.path.exists(path):
+    if os.path.exists(path):
 
-            if path in list(filedict.values()):
-                tmp = 'Sorry, the path has been added'
-            elif filename in list(filedict.keys()):
-                tmp = 'Sorry, the filename has been used'
-            else:
-                filedict[filename] = path
-                tmp = u'''
-                    {} has been added successfully.
-                '''.format(filename)
-            # print('1')
-            # print(filedict)
+        if path in list(load_filedict('stored_vcf_filedict.json').values()):
+            tmp = 'Sorry, the path has been added'
+        elif filename in list(load_filedict('stored_vcf_filedict.json').keys()):
+            tmp = 'Sorry, the filename has been used'
         else:
-            tmp = 'The path deos not exists.'
+            filedict = load_filedict('stored_vcf_filedict.json')
+            filedict[filename] = path
+            out = 'dat/' + path[1:-3].replace('/', '_') + 'txt'
+            if not os.path.exists(out):
+                os.system('grep -v "^#" ' + path + ' | cut -f 1,2,7 | sort > ' + out)
+            save_filedict(filedict)
+            tmp = u'''
+                {} has been added successfully.
+            '''.format(filename)
+        # print(filedict)
+    else:
+        tmp = 'The path deos not exists.'
 
     return tmp
 
@@ -218,13 +230,13 @@ def add_new_vcf(filename, path, n_clicks):
     Input('submit-val', 'n_clicks'))
 # def update_name1(name1_options, filename, path, n_clicks):
 def update_names(n_clicks):
-    name1_options = list(filedict.keys())
-    name2_options = copy.deepcopy(name1_options)
+
+    name1_options = list(load_filedict('stored_vcf_filedict.json').keys())
 
     # if os.path.exists(path):
     #     if path not in list(filedict.values()) and filename not in list(filedict.keys()):
     #         name1_options += [filename]
-    return name1_options, name2_options
+    return name1_options, name1_options
 
 
 
@@ -232,7 +244,7 @@ def update_names(n_clicks):
     Output('my_output', component_property='children'),
     Input('submit-val', 'n_clicks'))
 def update_chart(n_clicks):
-    df_res = chart(filedict)
+    df_res = chart(load_filedict('stored_vcf_filedict.json'))
     columns = []
     for i in df_res.columns:
         if i != 'total':
@@ -242,7 +254,7 @@ def update_chart(n_clicks):
             columns.append({"name": i, "id": i, "type": 'numeric'})
     return dash_table.DataTable(data=df_res.to_dict('records'),
                                 columns=columns,
-                                tooltip_data=[{column: {'value': str(filedict[value]), 'type': 'markdown'}
+                                tooltip_data=[{column: {'value': str(load_filedict('stored_vcf_filedict.json')[value]), 'type': 'markdown'}
                                                for column, value in row.items()
                                                } for row in df_res[['name']].to_dict('records')],
                                 # Overflow into ellipsis
@@ -263,8 +275,8 @@ def update_chart(n_clicks):
 def update_radio_options(name1, name2):
     # path1 = 'dat/' + filedict[name1].split('/')[6] + '.txt'
     # path2 = 'dat/' + filedict[name2].split('/')[6] + '.txt'
-    path1 = 'dat/' + filedict[name1][1:-3].replace('/','_')+'txt'
-    path2 = 'dat/' + filedict[name2][1:-3].replace('/','_')+'txt'
+    path1 = 'dat/' + load_filedict('stored_vcf_filedict.json')[name1][1:-3].replace('/','_')+'txt'
+    path2 = 'dat/' + load_filedict('stored_vcf_filedict.json')[name2][1:-3].replace('/','_')+'txt'
     return get_used_filters(path1, path2)
 
 
@@ -274,8 +286,8 @@ def update_radio_options(name1, name2):
     Input('name2', 'value'),
     Input('caller', 'options'))
 def update_description(name1, name2, options):
-    path1 = filedict[name1]
-    path2 = filedict[name2]
+    path1 = load_filedict('stored_vcf_filedict.json')[name1]
+    path2 = load_filedict('stored_vcf_filedict.json')[name2]
     filters_dict = get_filters_dict(path1, path2)
     strs = ''
     for keys, values in filters_dict.items():
@@ -287,7 +299,4 @@ def update_description(name1, name2, options):
 
 
 if __name__ == '__main__':
-    # first, prepare the data
-    data_prepare(filedict)
-    #
     app.run_server(host='0.0.0.0', port=8080, debug=True)
