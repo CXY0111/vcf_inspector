@@ -210,6 +210,9 @@ def add_new_vcf(filename, path, n_clicks):
         else:
             filedict = load_filedict('stored_vcf_filedict.json')
             filedict[filename] = path
+            out = 'dat/' + path[1:-3].replace('/', '_') + 'txt'
+            if not os.path.exists(out):
+                os.system('grep -v "^#" ' + path + ' | cut -f 1,2,7 | sort > ' + out)
             save_filedict(filedict)
             tmp = u'''
                 {} has been added successfully.
