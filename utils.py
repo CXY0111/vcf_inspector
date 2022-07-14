@@ -153,7 +153,7 @@ def data_prepare(filelist):
         out = 'dat/' + cromwell_workflow_id + '/'
         # create a folder name with its cromwell_workflow_id in dat
         if not os.path.exists(out):
-            os.system('mkdir ' + out)
+            os.system('mkdir -p ' + out)
         # check and create txt file for out vcf all
         if os.path.exists(
                 path + 'call-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf') and not os.path.exists(

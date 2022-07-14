@@ -371,8 +371,8 @@ def add_new_vcf(n_clicks, path):
         tmp = 'The path deos not exists.'
 
     return tmp
-#
-#
+
+
 @app.callback(
     Output('name1', 'options'),
     Output('name2', 'options'),
