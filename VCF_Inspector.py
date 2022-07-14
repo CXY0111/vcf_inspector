@@ -9,14 +9,12 @@ import os
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets)
-# on katmai
-filelist = ['/diskmnt/Projects/Users/chen.xiangyu/dash/b17d5672-572f-463b-88ad-0ac7b06156ad/',
-            '/diskmnt/Projects/Users/chen.xiangyu/dash/0f45d954-d951-4927-a2ba-476e319a6a88/']
-# # on compute1
-# filelist = ['/storage1/fs1/m.wyczalkowski/Active/cromwell-data/cromwell-workdir/cromwell-executions/tindaisy2.ffpe.cwl'
-#             '/b17d5672-572f-463b-88ad-0ac7b06156ad/',
-#             '/storage1/fs1/m.wyczalkowski/Active/cromwell-data/cromwell-workdir/cromwell-executions/tindaisy2.ffpe.cwl'
-#             '/0f45d954-d951-4927-a2ba-476e319a6a88/']
+# # on katmai
+# filelist = ['/diskmnt/Projects/Users/chen.xiangyu/dash/b17d5672-572f-463b-88ad-0ac7b06156ad/',
+#             '/diskmnt/Projects/Users/chen.xiangyu/dash/0f45d954-d951-4927-a2ba-476e319a6a88/']
+# on compute1
+filelist = ['/storage1/fs1/dinglab//Active/Projects/rmashl/cromwell-data/cromwell-workdir/cromwell-executions/tindaisy2.cwl/04491d22-a7f7-4a60-a9c6-22ba9ab45b50/analysis',
+            '/storage1/fs1/dinglab/Active/Projects/rmashl/cromwell-data/cromwell-workdir/cromwell-executions/tindaisy2.cwl/7b1d90ac-f6ed-40cf-a00c-46352499c71a/analysis']
 # save filedict to json
 save_filelist(filelist)
 # first, prepare the data
