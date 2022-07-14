@@ -1,8 +1,9 @@
 # VCF Inspector
 
-how to run VCF Inspector?
+VCF Inspector is a web application to visualize any two vcf files. How to run VCF Inspector?
 
 **directly**:
+
 First, install the libraries needed. See in requirements.txt
 ```
 python VCF_Inspector.py

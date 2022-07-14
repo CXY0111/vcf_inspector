@@ -1,31 +1,26 @@
 from dash import Dash, html, dcc, Input, Output, State, dash_table, callback
 import pandas as pd
 import plotly.express as px
-from utils import venn_diagram, chart, get_filters_dict, get_used_filters, data_prepare, save_filedict, load_filedict
+from utils import venn_diagram, chart, get_filters_dict, get_used_filters, data_prepare, save_filelist, load_filelist,load_filelist_id
 import plotly.graph_objects as go
 from dash.dash_table.Format import Format, Scheme, Trim
-import json
+import re
 import os
 
-app = Dash(__name__)
-# # on katmai
-# filedict = {'CTSP-AD3X_RunA': '/diskmnt/Projects/Users/chen.xiangyu/dash/b17d5672-572f-463b-88ad-0ac7b06156ad/call'
-#                               '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf',
-#             'CTSP-AD3X_RunB': '/diskmnt/Projects/Users/chen.xiangyu/dash/0f45d954-d951-4927-a2ba-476e319a6a88/call'
-#                               '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf'}
-# on compute1
-filedict = {'CTSP-AD3X_RunA': '/storage1/fs1/m.wyczalkowski/Active/cromwell-data/cromwell-workdir/cromwell-executions'
-                              '/tindaisy2.ffpe.cwl/b17d5672-572f-463b-88ad-0ac7b06156ad/call'
-                              '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf',
-            'CTSP-AD3X_RunB': '/storage1/fs1/m.wyczalkowski/Active/cromwell-data/cromwell-workdir/cromwell-executions'
-                              '/tindaisy2.ffpe.cwl/0f45d954-d951-4927-a2ba-476e319a6a88/call'
-                              '-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf'}
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+app = Dash(__name__, external_stylesheets=external_stylesheets)
+# on katmai
+filelist = ['/diskmnt/Projects/Users/chen.xiangyu/dash/b17d5672-572f-463b-88ad-0ac7b06156ad/',
+            '/diskmnt/Projects/Users/chen.xiangyu/dash/0f45d954-d951-4927-a2ba-476e319a6a88/']
+# # on compute1
+# filelist = ['/storage1/fs1/m.wyczalkowski/Active/cromwell-data/cromwell-workdir/cromwell-executions/tindaisy2.ffpe.cwl'
+#             '/b17d5672-572f-463b-88ad-0ac7b06156ad/',
+#             '/storage1/fs1/m.wyczalkowski/Active/cromwell-data/cromwell-workdir/cromwell-executions/tindaisy2.ffpe.cwl'
+#             '/0f45d954-d951-4927-a2ba-476e319a6a88/']
 # save filedict to json
-filename = 'stored_vcf_filedict.json'
-with open(filename, 'w') as f:
-    f.write(json.dumps(filedict))
+save_filelist(filelist)
 # first, prepare the data
-data_prepare(filedict)
+data_prepare(filelist)
 
 
 
@@ -35,27 +30,19 @@ app.layout = html.Div([
     # title
     html.H1(children='This is web application to analyze and compare TinDaisy'),
 
+    html.Label('Please add path of new vcf files.'),
+
     # add new vcf files
     html.Div([
-        html.Label('Please add path of new vcf files.'),
-
-        html.Div([
-            html.Label('Name: ')
-        ], style={'width': '4%', 'display': 'inline-block'}),
-
-        html.Div([
-            dcc.Input(value='example: CTSP-AD3X_RunA', type='text', id='filename', style={'width': '95%'}),
-        ], style={'width': '20%', 'display': 'inline-block'}),
 
         html.Div([
             html.Label('Path: ')
         ], style={'width': '4%', 'display': 'inline-block'}),
 
         html.Div([
-            dcc.Input(value='on katmai,example: /diskmnt/Projects/Users/chen.xiangyu/dash/' \
-                            'b17d5672-572f-463b-88ad-0ac7b06156ad/call-snp_indel_proximity_filter/' \
-                            'execution/output/ProximityFiltered.vcf', type='text', id='path', style={'width': '98%'})
-        ], style={'width': '45%', 'display': 'inline-block'}),
+            dcc.Input(value='/diskmnt/Projects/Users/chen.xiangyu/dash/' \
+                            'b17d5672-572f-463b-88ad-0ac7b06156ad/', type='text', id='path', style={'width': '98%'})
+        ], style={'width': '85%', 'display': 'inline-block'}),
 
         html.Div([
             html.Button('Submit', id='submit-val', n_clicks=0, style={'width': '95%'}),
@@ -63,7 +50,7 @@ app.layout = html.Div([
 
         html.Div(id='output-state')
 
-    ], style={'padding': '10px 5px'}),
+    ], style={'padding': '10px 0px'}),
 
     # venn diagram
     html.Div([
@@ -71,24 +58,27 @@ app.layout = html.Div([
 
         html.Div([
             dcc.Dropdown(
-                list(load_filedict('stored_vcf_filedict.json').keys()),
-                'CTSP-AD3X_RunA',
+                load_filelist_id('stored_vcf_filelist.json'),
+                load_filelist_id('stored_vcf_filelist.json')[0],
                 id='name1',
             ),
-        ], style={'width': '47%', 'display': 'inline-block'}),
+            dcc.RadioItems(id='name1-radio'),
+        ], style={'width': '47%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
         html.Div([
             # placerholder
-        ], style={'width': '4%', 'display': 'inline-block'}),
+        ], style={'width': '4%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
         html.Div([
             dcc.Dropdown(
-                list(load_filedict('stored_vcf_filedict.json').keys()),
-                'CTSP-AD3X_RunB',
+                load_filelist_id('stored_vcf_filelist.json'),
+                load_filelist_id('stored_vcf_filelist.json')[1],
                 id='name2',
             ),
-        ], style={'width': '47%', 'display': 'inline-block', }),
+            dcc.RadioItems(id='name2-radio'),
+        ], style={'width': '47%', 'display': 'inline-block', 'verticalAlign': 'top'}),
     ], style={'padding': '50px 5px', }),  # 'backgroundColor': '#FFD482'
+
     html.Div([
         html.Div([
             html.Div([
@@ -125,26 +115,115 @@ app.layout = html.Div([
     html.Div([
         html.H4(children='Chart of all VCF files:'),
         # my_output
-        html.Div(id='my_output',style={'width': '95%'}),
-        # html.Div([
-        #     dash_table.DataTable(id='chart')
-        #     # html.Table(
-        #     #     id='chart',
-        #     #     style={'width': '90%','backgroundColor': '#111111'}
-        #     # )
-        # ],style={'backgroundColor': '#FFD482'}),  # )
-        # html.Table(id='chart',)
+        html.Div([
+            html.Div(id='my_output',style={'width': '95%'}),
+        ])
+
+
     ], style={'padding': '0px 20px 20px 20px'})
 ])
+
+
+
+@app.callback(
+    Output('name1-radio', 'options'),
+    Input('name1', 'value'))
+def set_name1_radio_options(selected_cromwell_workflow_id):
+    res = []
+    out = 'dat/' + selected_cromwell_workflow_id + '/'
+    if os.path.exists(out + 'ProximityFiltered.txt'):
+        res.append('ProximityFiltered')
+    if os.path.exists(out + 'mutect_somatic_depth_filter.output.txt'):
+        res.append('mutect_somatic_depth_filter')
+    if os.path.exists(out + 'pindel_somatic_depth_filter.output.txt'):
+        res.append('pindel_somatic_depth_filter')
+    if os.path.exists(out + 'strelka_indel_somatic_depth_filter.output.txt'):
+        res.append('strelka_indel_somatic_depth_filter')
+    if os.path.exists(out + 'strelka_snv_somatic_depth_filter.output.txt'):
+        res.append('strelka_snv_somatic_depth_filter')
+    if os.path.exists(out + 'varscan_indel_somatic_depth_filter.output.txt'):
+        res.append('varscan_indel_somatic_depth_filter')
+    if os.path.exists(out + 'varscan_snv_somatic_depth_filter.output.txt'):
+        res.append('varscan_snv_somatic_depth_filter')
+    return [{'label': i, 'value': i} for i in res]
+
+
+@app.callback(
+    Output('name1-radio', 'value'),
+    Input('name1-radio', 'options'))
+def set_name1_radio_value(available_options):
+    return available_options[0]['value']
+
+
+@app.callback(
+    Output('name2-radio', 'options'),
+    Input('name2', 'value'))
+def set_name2_radio_options(selected_cromwell_workflow_id):
+    res = []
+    out = 'dat/' + selected_cromwell_workflow_id + '/'
+    if os.path.exists(out + 'ProximityFiltered.txt'):
+        res.append('ProximityFiltered')
+    if os.path.exists(out + 'mutect_somatic_depth_filter.output.txt'):
+        res.append('mutect_somatic_depth_filter')
+    if os.path.exists(out + 'pindel_somatic_depth_filter.output.txt'):
+        res.append('pindel_somatic_depth_filter')
+    if os.path.exists(out + 'strelka_indel_somatic_depth_filter.output.txt'):
+        res.append('strelka_indel_somatic_depth_filter')
+    if os.path.exists(out + 'strelka_snv_somatic_depth_filter.output.txt'):
+        res.append('strelka_snv_somatic_depth_filter')
+    if os.path.exists(out + 'varscan_indel_somatic_depth_filter.output.txt'):
+        res.append('varscan_indel_somatic_depth_filter')
+    if os.path.exists(out + 'varscan_snv_somatic_depth_filter.output.txt'):
+        res.append('varscan_snv_somatic_depth_filter')
+    return [{'label': i, 'value': i} for i in res]
+
+
+@app.callback(
+    Output('name2-radio', 'value'),
+    Input('name2-radio', 'options'))
+def set_name2_radio_value(available_options):
+    return available_options[0]['value']
+
+
+@app.callback(
+    Output('caller', 'options'),
+    Input('name1', 'value'),
+    Input('name1-radio','value'),
+    Input('name2', 'value'),
+    Input('name2-radio','value'))
+def update_filter_radio_options(name1, name1_radio, name2, name2_radio):
+    if name1_radio == 'ProximityFiltered':
+        path1 = 'dat/' + name1 + '/' + name1_radio + '.txt'
+    else:
+        path1 = 'dat/' + name1 + '/' + name1_radio + '.output.txt'
+
+    if name2_radio == 'ProximityFiltered':
+        path2 = 'dat/' + name2 + '/' + name2_radio + '.txt'
+    else:
+        path2 = 'dat/' + name2 + '/' + name2_radio + '.output.txt'
+    return get_used_filters([path1, path2])
 
 
 @app.callback(
     Output('venn_diagram', 'figure'),
     Input('name1', 'value'),
+    Input('name1-radio', 'value'),
     Input('name2', 'value'),
+    Input('name2-radio', 'value'),
     Input('caller', 'value'))
-def update_graph(name1, name2, caller):
-    com, ua, ub = venn_diagram(load_filedict('stored_vcf_filedict.json')[name1], load_filedict('stored_vcf_filedict.json')[name2], caller)
+def update_graph(name1, name1_radio, name2, name2_radio, caller):
+
+    if name1_radio == 'ProximityFiltered':
+        path1 = 'dat/' + name1 + '/' + name1_radio + '.txt'
+    else:
+        path1 = 'dat/' + name1 + '/' + name1_radio + '.output.txt'
+
+    if name2_radio == 'ProximityFiltered':
+        path2 = 'dat/' + name2 + '/' + name2_radio + '.txt'
+    else:
+        path2 = 'dat/' + name2 + '/' + name2_radio + '.output.txt'
+
+    com, ua, ub = venn_diagram(path1, path2, caller)
 
     fig = go.Figure()
 
@@ -192,102 +271,28 @@ def update_graph(name1, name2, caller):
 
 
 @app.callback(
-    Output('output-state', 'children'),
-    State('filename', 'value'),
-    State('path', 'value'),
-    Input('submit-val', 'n_clicks')
-)
-def add_new_vcf(filename, path, n_clicks):
-    tmp = u'''
-            The Button has been pressed {} times,nothing has been added.
-        '''.format(n_clicks)
-    if os.path.exists(path):
-
-        if path in list(load_filedict('stored_vcf_filedict.json').values()):
-            tmp = 'Sorry, the path has been added'
-        elif filename in list(load_filedict('stored_vcf_filedict.json').keys()):
-            tmp = 'Sorry, the filename has been used'
-        else:
-            filedict = load_filedict('stored_vcf_filedict.json')
-            filedict[filename] = path
-            out = 'dat/' + path[1:-3].replace('/', '_') + 'txt'
-            if not os.path.exists(out):
-                os.system('grep -v "^#" ' + path + ' | cut -f 1,2,7 | sort > ' + out)
-            save_filedict(filedict)
-            tmp = u'''
-                {} has been added successfully.
-            '''.format(filename)
-        # print(filedict)
-    else:
-        tmp = 'The path deos not exists.'
-
-    return tmp
-
-
-@app.callback(
-    Output('name1', 'options'),
-    Output('name2', 'options'),
-    Input('submit-val', 'n_clicks'))
-# def update_name1(name1_options, filename, path, n_clicks):
-def update_names(n_clicks):
-
-    name1_options = list(load_filedict('stored_vcf_filedict.json').keys())
-
-    # if os.path.exists(path):
-    #     if path not in list(filedict.values()) and filename not in list(filedict.keys()):
-    #         name1_options += [filename]
-    return name1_options, name1_options
-
-
-
-@callback(
-    Output('my_output', component_property='children'),
-    Input('submit-val', 'n_clicks'))
-def update_chart(n_clicks):
-    df_res = chart(load_filedict('stored_vcf_filedict.json'))
-    columns = []
-    for i in df_res.columns:
-        if i != 'total':
-            columns.append(
-                {"name": i, "id": i, "type": 'numeric', "format": Format(precision=2, scheme=Scheme.percentage)})
-        else:
-            columns.append({"name": i, "id": i, "type": 'numeric'})
-    return dash_table.DataTable(data=df_res.to_dict('records'),
-                                columns=columns,
-                                tooltip_data=[{column: {'value': str(load_filedict('stored_vcf_filedict.json')[value]), 'type': 'markdown'}
-                                               for column, value in row.items()
-                                               } for row in df_res[['name']].to_dict('records')],
-                                # Overflow into ellipsis
-                                style_cell={
-                                    'overflow': 'hidden',
-                                    'textOverflow': 'ellipsis',
-                                    'maxWidth': 0,
-                                },
-                                tooltip_delay=0,
-                                tooltip_duration=None
-                                )
-
-
-@app.callback(
-    Output('caller', 'options'),
-    Input('name1', 'value'),
-    Input('name2', 'value'))
-def update_radio_options(name1, name2):
-    # path1 = 'dat/' + filedict[name1].split('/')[6] + '.txt'
-    # path2 = 'dat/' + filedict[name2].split('/')[6] + '.txt'
-    path1 = 'dat/' + load_filedict('stored_vcf_filedict.json')[name1][1:-3].replace('/','_')+'txt'
-    path2 = 'dat/' + load_filedict('stored_vcf_filedict.json')[name2][1:-3].replace('/','_')+'txt'
-    return get_used_filters(path1, path2)
-
-
-@app.callback(
     Output('description', 'children'),
     Input('name1', 'value'),
+    Input('name1-radio', 'value'),
     Input('name2', 'value'),
+    Input('name2-radio', 'value'),
     Input('caller', 'options'))
-def update_description(name1, name2, options):
-    path1 = load_filedict('stored_vcf_filedict.json')[name1]
-    path2 = load_filedict('stored_vcf_filedict.json')[name2]
+def update_description(name1, name1_radio, name2, name2_radio, options):
+    paths = load_filelist('stored_vcf_filelist.json')
+    for path in paths:
+        if name1 in path:
+            path1 = path
+        if name2 in path:
+            path2 = path
+    if name1_radio == 'ProximityFiltered':
+        path1 += 'call-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf'
+    else:
+        path1 += 'call-depth_filter_' + name1_radio[:-21] + '/execution/somatic_depth_filter.output.vcf'
+
+    if name2_radio == 'ProximityFiltered':
+        path2 += 'call-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf'
+    else:
+        path2 += 'call-depth_filter_' + name2_radio[:-21] + '/execution/somatic_depth_filter.output.vcf'
     filters_dict = get_filters_dict(path1, path2)
     strs = ''
     for keys, values in filters_dict.items():
@@ -296,6 +301,90 @@ def update_description(name1, name2, options):
         if keys in options:
             strs += '\n  ' + keys + ': ' + values
     return strs
+
+
+@callback(
+    Output('my_output', component_property='children'),
+    Input('submit-val', 'n_clicks'),
+    Input('name1-radio', 'options'),
+    Input('name2-radio', 'options'),)
+def update_chart(n_clicks, name1_radio, name2_radio):
+    children_list = []
+    name1_radio_list = [row['value'] for row in name1_radio]
+    name2_radio_list = [row['value'] for row in name2_radio]
+    union_list = list(set(name1_radio_list).union(set(name2_radio_list)))
+
+    for vcf_file_type in union_list:
+        children_list.append(
+            html.Label(vcf_file_type)
+        )
+        df_res = chart(filelist,vcf_file_type)
+        columns = []
+        for i in df_res.columns:
+            if i != 'total':
+                columns.append(
+                    {"name": i, "id": i, "type": 'numeric', "format": Format(precision=2, scheme=Scheme.percentage)})
+            else:
+                columns.append({"name": i, "id": i, "type": 'numeric'})
+        children_list.append(
+            dash_table.DataTable(data=df_res.to_dict('records'),
+                                 columns=columns,
+                                 tooltip_data=[{column: {'value': value, 'type': 'markdown'}
+                                                for column, value in row.items()
+                                                } for row in df_res[['cromwell_workflow_id']].to_dict('records')],
+                                 # Overflow into ellipsis
+                                 style_cell={
+                                     'overflow': 'hidden',
+                                     'textOverflow': 'ellipsis',
+                                     'maxWidth': 0,
+                                 },
+                                 tooltip_delay=0,
+                                 tooltip_duration=None
+                                 )
+        )
+    return html.Div(
+        children=children_list
+    )
+
+
+@app.callback(
+    Output('output-state', 'children'),
+    Input('submit-val', 'n_clicks'),
+    State('path', 'value'))
+def add_new_vcf(n_clicks, path):
+    tmp = u'''
+            The Button has been pressed {} times,nothing has been added.
+        '''.format(n_clicks)
+    cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',path).group(0)
+    if os.path.exists(path):
+        filelist = load_filelist_id('stored_vcf_filelist.json')
+        if cromwell_workflow_id in filelist:
+            tmp = 'Sorry, the path has been added'
+        else:
+            filelist.append(path)
+            save_filelist(filelist)
+            data_prepare(filelist)
+            tmp = u'''
+                {} has been added successfully.
+            '''.format(cromwell_workflow_id)
+    else:
+        tmp = 'The path deos not exists.'
+
+    return tmp
+#
+#
+@app.callback(
+    Output('name1', 'options'),
+    Output('name2', 'options'),
+    Input('submit-val', 'n_clicks'))
+def update_names(n_clicks):
+
+    name1_options = load_filelist_id('stored_vcf_filelist.json')
+
+    # if os.path.exists(path):
+    #     if path not in list(filedict.values()) and filename not in list(filedict.keys()):
+    #         name1_options += [filename]
+    return name1_options, name1_options
 
 
 if __name__ == '__main__':
