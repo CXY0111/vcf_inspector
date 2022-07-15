@@ -334,6 +334,7 @@ def update_chart(name1_radio, name2_radio):
     union_list = list(set(name1_radio_list).union(set(name2_radio_list)))
 
     count = 0
+    print('Making charts:')
     for vcf_file_type in union_list:
         count += 1
         children_list.append(
