@@ -17,9 +17,6 @@ input_file = args.input
 filelist = load_input_paths(input_file)
 filenames = load_input_names(input_file)
 filedict = load_input_dict(input_file)
-print(filelist)
-print(filenames)
-print(filedict)
 # # on katmai
 # filelist = ['/diskmnt/Projects/Users/chen.xiangyu/dash/b17d5672-572f-463b-88ad-0ac7b06156ad/',
 #             '/diskmnt/Projects/Users/chen.xiangyu/dash/0f45d954-d951-4927-a2ba-476e319a6a88/']

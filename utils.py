@@ -45,6 +45,7 @@ def chart(filedict,vcf_file_type):
         :return: df of the distribution
         :rtype: dataframe
         """
+    print('Making charts:')
     filelist = list(filedict.values())
     if vcf_file_type == 'ProximityFiltered':
         out_list = ['dat/' + re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',path).group(0) + '/ProximityFiltered.txt' for path in filelist]
