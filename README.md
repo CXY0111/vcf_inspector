@@ -20,7 +20,7 @@ python VCF_Inspector.py -i <input_file>
 	```
 3. in docker container, run
 	```
-	python VCF_Inspector.py
+	python VCF_Inspector.py -i input_files.txt
 	```
 
 **compute1**
@@ -38,7 +38,7 @@ python VCF_Inspector.py -i <input_file>
     ```
 4. Run vcf_inspector
     ```
-    python VCF_Inspector.py
+    python VCF_Inspector.py -i input_files.txt
     ```
 5. Access the host's 8080 port to use. The host's ip address will be displayed on the terminal. For example，address + port should be like:
     http://compute1-exec-187.compute.ris.wustl.edu:8080/
