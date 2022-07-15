@@ -8,8 +8,7 @@ import re
 import os
 import argparse
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-app = Dash(__name__, external_stylesheets=external_stylesheets)
+
 parser = argparse.ArgumentParser(description="VCF inspector")
 parser.add_argument("-i", "--input", type=str, dest="input", default='input_files.txt',
                     help="input a txt file that contains paths each line")
@@ -31,32 +30,34 @@ print(filedict)
 # save_filelist_json(filelist)
 # first, prepare the data
 data_prepare(filelist)
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+app = Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([
     # title
     html.H1(children='This is web application to analyze and compare TinDaisy'),
 
-    html.Label('Please add path of new vcf files.'),
-
-    # add new vcf files
-    html.Div([
-
-        html.Div([
-            html.Label('Path: ')
-        ], style={'width': '4%', 'display': 'inline-block'}),
-
-        html.Div([
-            dcc.Input(value='/diskmnt/Projects/Users/chen.xiangyu/dash/' \
-                            'b17d5672-572f-463b-88ad-0ac7b06156ad/', type='text', id='path', style={'width': '98%'})
-        ], style={'width': '85%', 'display': 'inline-block'}),
-
-        html.Div([
-            html.Button('Submit', id='submit-val', n_clicks=0, style={'width': '95%'}),
-        ], style={'width': '10%', 'display': 'inline-block'}),
-
-        html.Div(id='output-state')
-
-    ], style={'padding': '10px 0px'}),
+    # html.Label('Please add path of new vcf files.'),
+    #
+    # # add new vcf files
+    # html.Div([
+    #
+    #     html.Div([
+    #         html.Label('Path: ')
+    #     ], style={'width': '4%', 'display': 'inline-block'}),
+    #
+    #     html.Div([
+    #         dcc.Input(value='/diskmnt/Projects/Users/chen.xiangyu/dash/' \
+    #                         'b17d5672-572f-463b-88ad-0ac7b06156ad/', type='text', id='path', style={'width': '98%'})
+    #     ], style={'width': '85%', 'display': 'inline-block'}),
+    #
+    #     html.Div([
+    #         html.Button('Submit', id='submit-val', n_clicks=0, style={'width': '95%'}),
+    #     ], style={'width': '10%', 'display': 'inline-block'}),
+    #
+    #     html.Div(id='output-state')
+    #
+    # ], style={'padding': '10px 0px'}),
 
     # venn diagram
     html.Div([
@@ -335,10 +336,14 @@ def update_chart(name1_radio, name2_radio):
     name2_radio_list = [row['value'] for row in name2_radio]
     union_list = list(set(name1_radio_list).union(set(name2_radio_list)))
 
+    count = 0
     for vcf_file_type in union_list:
+        count += 1
         children_list.append(
             html.Label(vcf_file_type)
         )
+
+        print('({}/{}) Making {} chart......'.format(count,len(union_list),vcf_file_type))
         df_res = chart(filedict,vcf_file_type)
         columns = []
         for i in df_res.columns:

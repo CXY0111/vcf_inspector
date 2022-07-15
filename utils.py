@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import re
 import json
+from tqdm import tqdm
 
 
 def venn_diagram(file1, file2, caller):
@@ -52,7 +53,6 @@ def chart(filedict,vcf_file_type):
     used_filters = get_used_filters(out_list)
     if 'vcf_all' in used_filters:
         used_filters.remove('vcf_all')
-    print(used_filters)
     df_res = pd.DataFrame(columns=['name'] + used_filters + ['total'])
     for name,path in filedict.items():
         numbers = {}
@@ -70,7 +70,6 @@ def chart(filedict,vcf_file_type):
 
         numbers['total'] = total
         df_res = df_res.append(numbers, ignore_index=True)
-    print(df_res)
     return df_res
 
 
@@ -136,6 +135,7 @@ def data_prepare(filelist):
         :return: None
         :rtype: None
         """
+    print('Data Prepare:')
     for path in filelist:
         cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
                                          path).group(0)
@@ -143,49 +143,66 @@ def data_prepare(filelist):
         # create a folder name with its cromwell_workflow_id in dat
         if not os.path.exists(out):
             os.system('mkdir -p ' + out)
-        # check and create txt file for out vcf all
-        if os.path.exists(
-                path + 'call-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf') and not os.path.exists(
-            out + 'ProximityFiltered.txt'):
-            os.system(
-                'grep -v "^#" ' + path + 'call-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf | cut -f 1,2,7 | sort > ' + out + 'ProximityFiltered.txt')
-        ### before merge vcfs ###
-        # mutect
-        if os.path.exists(
-                path + 'call-depth_filter_mutect/execution/somatic_depth_filter.output.vcf') and not os.path.exists(
-            out + 'mutect_somatic_depth_filter.output.txt'):
-            os.system(
-                'grep -v "^#" ' + path + 'call-depth_filter_mutect/execution/somatic_depth_filter.output.vcf | cut -f 1,2,7 | sort > ' + out + 'mutect_somatic_depth_filter.output.txt')
-        # pindel
-        if os.path.exists(
-                path + 'call-depth_filter_pindel/execution/somatic_depth_filter.output.vcf') and not os.path.exists(
-            out + 'pindel_somatic_depth_filter.output.txt'):
-            os.system(
-                'grep -v "^#" ' + path + 'call-depth_filter_pindel/execution/somatic_depth_filter.output.vcf | cut -f 1,2,7 | sort > ' + out + 'pindel_somatic_depth_filter.output.txt')
-        # strelka_indel
-        if os.path.exists(
-                path + 'call-depth_filter_strelka_indel/execution/somatic_depth_filter.output.vcf') and not os.path.exists(
-            out + 'strelka_indel_somatic_depth_filter.output.txt'):
-            os.system(
-                'grep -v "^#" ' + path + 'call-depth_filter_strelka_indel/execution/somatic_depth_filter.output.vcf | cut -f 1,2,7 | sort > ' + out + 'strelka_indel_somatic_depth_filter.output.txt')
-        # strelka_snv
-        if os.path.exists(
-                path + 'call-depth_filter_strelka_snv/execution/somatic_depth_filter.output.vcf') and not os.path.exists(
-            out + 'strelka_snv_somatic_depth_filter.output.txt'):
-            os.system(
-                'grep -v "^#" ' + path + 'call-depth_filter_strelka_snv/execution/somatic_depth_filter.output.vcf | cut -f 1,2,7 | sort > ' + out + 'strelka_snv_somatic_depth_filter.output.txt')
-        # varscan_indel
-        if os.path.exists(
-                path + 'call-depth_filter_varscan_indel/execution/somatic_depth_filter.output.vcf') and not os.path.exists(
-            out + 'varscan_indel_somatic_depth_filter.output.txt'):
-            os.system(
-                'grep -v "^#" ' + path + 'call-depth_filter_varscan_indel/execution/somatic_depth_filter.output.vcf | cut -f 1,2,7 | sort > ' + out + 'varscan_indel_somatic_depth_filter.output.txt')
-        # varscan_snv
-        if os.path.exists(
-                path + 'call-depth_filter_varscan_snv/execution/somatic_depth_filter.output.vcf') and not os.path.exists(
-            out + 'varscan_snv_somatic_depth_filter.output.txt'):
-            os.system(
-                'grep -v "^#" ' + path + 'call-depth_filter_varscan_snv/execution/somatic_depth_filter.output.vcf | cut -f 1,2,7 | sort > ' + out + 'varscan_snv_somatic_depth_filter.output.txt')
+
+        print('Processing', cromwell_workflow_id)
+        directories = ['call-snp_indel_proximity_filter','call-depth_filter_mutect','call-depth_filter_pindel',
+                       'call-depth_filter_strelka_indel','call-depth_filter_strelka_snv',
+                       'call-depth_filter_varscan_indel','call-depth_filter_varscan_snv']
+        for dir in tqdm(directories):
+            if dir == 'call-snp_indel_proximity_filter':
+                vcf_path = path + dir + '/execution/output/ProximityFiltered.vcf'
+                vcf_out = out + 'ProximityFiltered.txt'
+                if os.path.exists(vcf_path) and not os.path.exists(vcf_out):
+                    os.system('grep -v "^#" ' + vcf_path + ' | cut -f 1,2,7 | sort > ' + vcf_out)
+            else:
+                vcf_path = path + dir + '/execution/somatic_depth_filter.output.vcf'
+                filter = re.sub('call-depth_filter_','',dir)
+                vcf_out = out + filter + '_somatic_depth_filter.output.txt'
+                if os.path.exists(vcf_path) and not os.path.exists(vcf_out):
+                    os.system('grep -v "^#" ' + vcf_path + ' | cut -f 1,2,7 | sort > ' + vcf_out)
+        # # check and create txt file for out vcf all
+        # if os.path.exists(
+        #         path + 'call-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf') and not os.path.exists(
+        #     out + 'ProximityFiltered.txt'):
+        #     os.system(
+        #         'grep -v "^#" ' + path + 'call-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf | cut -f 1,2,7 | sort > ' + out + 'ProximityFiltered.txt')
+        # ### before merge vcfs ###
+        # # mutect
+        # if os.path.exists(
+        #         path + 'call-depth_filter_mutect/execution/somatic_depth_filter.output.vcf') and not os.path.exists(
+        #     out + 'mutect_somatic_depth_filter.output.txt'):
+        #     os.system(
+        #         'grep -v "^#" ' + path + 'call-depth_filter_mutect/execution/somatic_depth_filter.output.vcf | cut -f 1,2,7 | sort > ' + out + 'mutect_somatic_depth_filter.output.txt')
+        # # pindel
+        # if os.path.exists(
+        #         path + 'call-depth_filter_pindel/execution/somatic_depth_filter.output.vcf') and not os.path.exists(
+        #     out + 'pindel_somatic_depth_filter.output.txt'):
+        #     os.system(
+        #         'grep -v "^#" ' + path + 'call-depth_filter_pindel/execution/somatic_depth_filter.output.vcf | cut -f 1,2,7 | sort > ' + out + 'pindel_somatic_depth_filter.output.txt')
+        # # strelka_indel
+        # if os.path.exists(
+        #         path + 'call-depth_filter_strelka_indel/execution/somatic_depth_filter.output.vcf') and not os.path.exists(
+        #     out + 'strelka_indel_somatic_depth_filter.output.txt'):
+        #     os.system(
+        #         'grep -v "^#" ' + path + 'call-depth_filter_strelka_indel/execution/somatic_depth_filter.output.vcf | cut -f 1,2,7 | sort > ' + out + 'strelka_indel_somatic_depth_filter.output.txt')
+        # # strelka_snv
+        # if os.path.exists(
+        #         path + 'call-depth_filter_strelka_snv/execution/somatic_depth_filter.output.vcf') and not os.path.exists(
+        #     out + 'strelka_snv_somatic_depth_filter.output.txt'):
+        #     os.system(
+        #         'grep -v "^#" ' + path + 'call-depth_filter_strelka_snv/execution/somatic_depth_filter.output.vcf | cut -f 1,2,7 | sort > ' + out + 'strelka_snv_somatic_depth_filter.output.txt')
+        # # varscan_indel
+        # if os.path.exists(
+        #         path + 'call-depth_filter_varscan_indel/execution/somatic_depth_filter.output.vcf') and not os.path.exists(
+        #     out + 'varscan_indel_somatic_depth_filter.output.txt'):
+        #     os.system(
+        #         'grep -v "^#" ' + path + 'call-depth_filter_varscan_indel/execution/somatic_depth_filter.output.vcf | cut -f 1,2,7 | sort > ' + out + 'varscan_indel_somatic_depth_filter.output.txt')
+        # # varscan_snv
+        # if os.path.exists(
+        #         path + 'call-depth_filter_varscan_snv/execution/somatic_depth_filter.output.vcf') and not os.path.exists(
+        #     out + 'varscan_snv_somatic_depth_filter.output.txt'):
+        #     os.system(
+        #         'grep -v "^#" ' + path + 'call-depth_filter_varscan_snv/execution/somatic_depth_filter.output.vcf | cut -f 1,2,7 | sort > ' + out + 'varscan_snv_somatic_depth_filter.output.txt')
 
 
 def save_filelist_json(filelist):
@@ -202,23 +219,33 @@ def load_filelist_json(filename):
 
 
 def load_input_paths(input_file):
+    res = []
     with open(input_file, "r") as txt_file:
         lines = txt_file.readlines()
-        for n in range(len(lines)):
-            lines[n] = re.sub('.+:','',lines[n])
-            lines[n] = re.sub('\n','',lines[n])
-            if lines[n][-1] != '/':
-                lines[n] += '/'
-    return lines
+        for line in lines:
+            line = re.sub('\n', '', line)
+            if not line or line.startswith('#'):
+                continue
+            line = re.sub('.+:','',line)
+
+            if line[-1] != '/':
+                line += '/'
+            res.append(line)
+    return res
 
 
 def load_input_names(input_file):
+    res = []
     with open(input_file, "r") as txt_file:
         lines = txt_file.readlines()
-        for n in range(len(lines)):
-            lines[n] = re.sub(':.+', '', lines[n])
-            lines[n] = re.sub('\n', '', lines[n])
-    return lines
+        for line in lines:
+            line = re.sub('\n', '', line)
+            if not line or line.startswith('#'):
+                continue
+            line = re.sub(':.+', '', line)
+
+            res.append(line)
+    return res
 
 
 def load_input_dict(input_file):
@@ -226,9 +253,11 @@ def load_input_dict(input_file):
     with open(input_file, "r") as txt_file:
         lines = txt_file.readlines()
         for line in lines:
+            line = re.sub('\n', '', line)
+            if not line or line.startswith('#'):
+                continue
             name = line.split(':')[0]
             path = line.split(':')[1]
-            path = re.sub('\n', '', path)
             if path[-1] != '/':
                 path += '/'
             result_dict[name] = path
