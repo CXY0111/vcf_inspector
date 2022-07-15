@@ -35,15 +35,16 @@ def venn_diagram(file1, file2, caller):
            len(dfA_filter.merge(dfB_filter, indicator=True, how='right').loc[lambda x: x['_merge'] != 'both'])
 
 
-def chart(filelist,vcf_file_type):
+def chart(filedict,vcf_file_type):
     """
-        get the distribution of each vcf file in the file list
+        get the distribution of each vcf file in the file dict
 
-        :param filelist: filedict that contains all the vcf files
+        :param filedict: filedict that contains all the vcf files
         :param vcf_file_type: which kind of vcf file, ProximityFiltered? mutect_somatic_depth_filter?
         :return: df of the distribution
         :rtype: dataframe
         """
+    filelist = list(filedict.values())
     if vcf_file_type == 'ProximityFiltered':
         out_list = ['dat/' + re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',path).group(0) + '/ProximityFiltered.txt' for path in filelist]
     else:
@@ -52,12 +53,16 @@ def chart(filelist,vcf_file_type):
     if 'vcf_all' in used_filters:
         used_filters.remove('vcf_all')
     print(used_filters)
-    df_res = pd.DataFrame(columns=['cromwell_workflow_id'] + used_filters + ['total'])
-    for path in out_list:
+    df_res = pd.DataFrame(columns=['name'] + used_filters + ['total'])
+    for name,path in filedict.items():
         numbers = {}
         cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
                                          path).group(0)
-        numbers['cromwell_workflow_id'] = cromwell_workflow_id
+        numbers['name'] = name
+        if vcf_file_type == 'ProximityFiltered':
+            path = 'dat/' + re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}', path).group(0) + '/ProximityFiltered.txt'
+        else:
+            path = 'dat/' + re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}', path).group(0) + '/' + vcf_file_type + '.output.txt'
         df = pd.read_table(path, header=None)
         total = len(df)
         for filter in used_filters:
@@ -65,23 +70,7 @@ def chart(filelist,vcf_file_type):
 
         numbers['total'] = total
         df_res = df_res.append(numbers, ignore_index=True)
-
-
-
-
-        # df = pd.read_table(path, header=None)
-        # total = len(df)
-        # pass_number = len(df[df[2].str.contains('PASS')])
-        # af_number = len(df[df[2].str.contains('af')])
-        # dbsnp_number = len(df[df[2].str.contains('af')])
-        # ffpe_number = len(df[df[2].str.contains('ffpe')])
-        # merge_number = len(df[df[2].str.contains('merge')])
-        # proximity_number = len(df[df[2].str.contains('proximity')])
-        #
-        # df_res = df_res.append(
-        #     {'cromwell_workflow_id': cromwell_workflow_id, 'PASS': pass_number / total, 'af': af_number / total, 'dbsnp': dbsnp_number / total,
-        #      'ffpe': ffpe_number / total, 'merge': merge_number / total,
-        #      'proximity': proximity_number / total, 'total': total}, ignore_index=True)
+    print(df_res)
     return df_res
 
 
@@ -199,24 +188,62 @@ def data_prepare(filelist):
                 'grep -v "^#" ' + path + 'call-depth_filter_varscan_snv/execution/somatic_depth_filter.output.vcf | cut -f 1,2,7 | sort > ' + out + 'varscan_snv_somatic_depth_filter.output.txt')
 
 
-def save_filelist(filelist):
-    filename = 'stored_vcf_filelist.json'
+def save_filelist_json(filelist):
+    filename = 'dat/stored_vcf_filelist.json'
     with open(filename, 'w') as f:
         f.write(json.dumps(filelist))
 
 
-def load_filelist(filename):
+def load_filelist_json(filename):
+    filename = 'dat/' + filename
     with open(filename) as f:
         filelist = json.loads(f.read())
     return filelist
 
 
-def load_filelist_id(filename):
-    with open(filename) as f:
-        filelist = json.loads(f.read())
-    res = []
-    for path in filelist:
-        cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
-                                         path).group(0)
-        res.append(cromwell_workflow_id)
-    return res
+def load_input_paths(input_file):
+    with open(input_file, "r") as txt_file:
+        lines = txt_file.readlines()
+        for n in range(len(lines)):
+            lines[n] = re.sub('.+:','',lines[n])
+            lines[n] = re.sub('\n','',lines[n])
+            if lines[n][-1] != '/':
+                lines[n] += '/'
+    return lines
+
+
+def load_input_names(input_file):
+    with open(input_file, "r") as txt_file:
+        lines = txt_file.readlines()
+        for n in range(len(lines)):
+            lines[n] = re.sub(':.+', '', lines[n])
+            lines[n] = re.sub('\n', '', lines[n])
+    return lines
+
+
+def load_input_dict(input_file):
+    result_dict = {}
+    with open(input_file, "r") as txt_file:
+        lines = txt_file.readlines()
+        for line in lines:
+            name = line.split(':')[0]
+            path = line.split(':')[1]
+            path = re.sub('\n', '', path)
+            if path[-1] != '/':
+                path += '/'
+            result_dict[name] = path
+    return result_dict
+
+
+
+
+# def load_filelist_id(filename):
+#     filename = 'dat/' + filename
+#     with open(filename) as f:
+#         filelist = json.loads(f.read())
+#     res = []
+#     for path in filelist:
+#         cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
+#                                          path).group(0)
+#         res.append(cromwell_workflow_id)
+#     return res

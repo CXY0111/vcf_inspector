@@ -1,28 +1,36 @@
 from dash import Dash, html, dcc, Input, Output, State, dash_table, callback
-import pandas as pd
 import plotly.express as px
-from utils import venn_diagram, chart, get_filters_dict, get_used_filters, data_prepare, save_filelist, load_filelist,load_filelist_id
+from utils import venn_diagram, chart, get_filters_dict, get_used_filters, data_prepare, load_input_paths, \
+    load_input_names, load_input_dict
 import plotly.graph_objects as go
 from dash.dash_table.Format import Format, Scheme, Trim
 import re
 import os
+import argparse
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets)
+parser = argparse.ArgumentParser(description="VCF inspector")
+parser.add_argument("-i", "--input", type=str, dest="input", default='input_files.txt',
+                    help="input a txt file that contains paths each line")
+args = parser.parse_args()
+input_file = args.input
+filelist = load_input_paths(input_file)
+filenames = load_input_names(input_file)
+filedict = load_input_dict(input_file)
+print(filelist)
+print(filenames)
+print(filedict)
 # # on katmai
 # filelist = ['/diskmnt/Projects/Users/chen.xiangyu/dash/b17d5672-572f-463b-88ad-0ac7b06156ad/',
 #             '/diskmnt/Projects/Users/chen.xiangyu/dash/0f45d954-d951-4927-a2ba-476e319a6a88/']
-# on compute1
-filelist = ['/storage1/fs1/dinglab//Active/Projects/rmashl/cromwell-data/cromwell-workdir/cromwell-executions/tindaisy2.cwl/04491d22-a7f7-4a60-a9c6-22ba9ab45b50/analysis',
-            '/storage1/fs1/dinglab/Active/Projects/rmashl/cromwell-data/cromwell-workdir/cromwell-executions/tindaisy2.cwl/7b1d90ac-f6ed-40cf-a00c-46352499c71a/analysis']
-# save filedict to json
-save_filelist(filelist)
+# # on compute1
+# filelist = ['/storage1/fs1/dinglab//Active/Projects/rmashl/cromwell-data/cromwell-workdir/cromwell-executions/tindaisy2.cwl/04491d22-a7f7-4a60-a9c6-22ba9ab45b50/analysis',
+#             '/storage1/fs1/dinglab/Active/Projects/rmashl/cromwell-data/cromwell-workdir/cromwell-executions/tindaisy2.cwl/7b1d90ac-f6ed-40cf-a00c-46352499c71a/analysis']
+# # save filedict to json
+# save_filelist_json(filelist)
 # first, prepare the data
 data_prepare(filelist)
-
-
-
-
 
 app.layout = html.Div([
     # title
@@ -56,8 +64,8 @@ app.layout = html.Div([
 
         html.Div([
             dcc.Dropdown(
-                load_filelist_id('stored_vcf_filelist.json'),
-                load_filelist_id('stored_vcf_filelist.json')[0],
+                filenames,
+                filenames[0],
                 id='name1',
             ),
             dcc.RadioItems(id='name1-radio'),
@@ -69,8 +77,8 @@ app.layout = html.Div([
 
         html.Div([
             dcc.Dropdown(
-                load_filelist_id('stored_vcf_filelist.json'),
-                load_filelist_id('stored_vcf_filelist.json')[1],
+                filenames,
+                filenames[1],
                 id='name2',
             ),
             dcc.RadioItems(id='name2-radio'),
@@ -114,19 +122,20 @@ app.layout = html.Div([
         html.H4(children='Chart of all VCF files:'),
         # my_output
         html.Div([
-            html.Div(id='my_output',style={'width': '95%'}),
+            html.Div(id='my_output', style={'width': '95%'}),
         ])
-
 
     ], style={'padding': '0px 20px 20px 20px'})
 ])
 
 
-
 @app.callback(
     Output('name1-radio', 'options'),
     Input('name1', 'value'))
-def set_name1_radio_options(selected_cromwell_workflow_id):
+def set_name1_radio_options(selected_name):
+    path = filedict[selected_name]
+    selected_cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
+                                              path).group(0)
     res = []
     out = 'dat/' + selected_cromwell_workflow_id + '/'
     if os.path.exists(out + 'ProximityFiltered.txt'):
@@ -156,7 +165,10 @@ def set_name1_radio_value(available_options):
 @app.callback(
     Output('name2-radio', 'options'),
     Input('name2', 'value'))
-def set_name2_radio_options(selected_cromwell_workflow_id):
+def set_name2_radio_options(selected_name):
+    path = filedict[selected_name]
+    selected_cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
+                                              path).group(0)
     res = []
     out = 'dat/' + selected_cromwell_workflow_id + '/'
     if os.path.exists(out + 'ProximityFiltered.txt'):
@@ -186,20 +198,28 @@ def set_name2_radio_value(available_options):
 @app.callback(
     Output('caller', 'options'),
     Input('name1', 'value'),
-    Input('name1-radio','value'),
+    Input('name1-radio', 'value'),
     Input('name2', 'value'),
-    Input('name2-radio','value'))
+    Input('name2-radio', 'value'))
 def update_filter_radio_options(name1, name1_radio, name2, name2_radio):
+    path1 = filedict[name1]
+    cromwell_workflow_id1 = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
+                                      path1).group(0)
     if name1_radio == 'ProximityFiltered':
-        path1 = 'dat/' + name1 + '/' + name1_radio + '.txt'
+        path1 = 'dat/' + cromwell_workflow_id1 + '/' + name1_radio + '.txt'
     else:
-        path1 = 'dat/' + name1 + '/' + name1_radio + '.output.txt'
+        path1 = 'dat/' + cromwell_workflow_id1 + '/' + name1_radio + '.output.txt'
 
+    path2 = filedict[name2]
+    cromwell_workflow_id2 = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
+                                      path2).group(0)
     if name2_radio == 'ProximityFiltered':
-        path2 = 'dat/' + name2 + '/' + name2_radio + '.txt'
+        path2 = 'dat/' + cromwell_workflow_id2 + '/' + name2_radio + '.txt'
     else:
-        path2 = 'dat/' + name2 + '/' + name2_radio + '.output.txt'
+        path2 = 'dat/' + cromwell_workflow_id2 + '/' + name2_radio + '.output.txt'
     return get_used_filters([path1, path2])
+
+
 
 
 @app.callback(
@@ -210,16 +230,21 @@ def update_filter_radio_options(name1, name1_radio, name2, name2_radio):
     Input('name2-radio', 'value'),
     Input('caller', 'value'))
 def update_graph(name1, name1_radio, name2, name2_radio, caller):
-
+    path1 = filedict[name1]
+    cromwell_workflow_id1 = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
+                                      path1).group(0)
     if name1_radio == 'ProximityFiltered':
-        path1 = 'dat/' + name1 + '/' + name1_radio + '.txt'
+        path1 = 'dat/' + cromwell_workflow_id1 + '/' + name1_radio + '.txt'
     else:
-        path1 = 'dat/' + name1 + '/' + name1_radio + '.output.txt'
+        path1 = 'dat/' + cromwell_workflow_id1 + '/' + name1_radio + '.output.txt'
 
+    path2 = filedict[name2]
+    cromwell_workflow_id2 = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
+                                      path2).group(0)
     if name2_radio == 'ProximityFiltered':
-        path2 = 'dat/' + name2 + '/' + name2_radio + '.txt'
+        path2 = 'dat/' + cromwell_workflow_id2 + '/' + name2_radio + '.txt'
     else:
-        path2 = 'dat/' + name2 + '/' + name2_radio + '.output.txt'
+        path2 = 'dat/' + cromwell_workflow_id2 + '/' + name2_radio + '.output.txt'
 
     com, ua, ub = venn_diagram(path1, path2, caller)
 
@@ -276,11 +301,10 @@ def update_graph(name1, name1_radio, name2, name2_radio, caller):
     Input('name2-radio', 'value'),
     Input('caller', 'options'))
 def update_description(name1, name1_radio, name2, name2_radio, options):
-    paths = load_filelist('stored_vcf_filelist.json')
-    for path in paths:
-        if name1 in path:
+    for path in filelist:
+        if filedict[name1] in path:
             path1 = path
-        if name2 in path:
+        if filedict[name2] in path:
             path2 = path
     if name1_radio == 'ProximityFiltered':
         path1 += 'call-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf'
@@ -303,10 +327,9 @@ def update_description(name1, name1_radio, name2, name2_radio, options):
 
 @callback(
     Output('my_output', component_property='children'),
-    Input('submit-val', 'n_clicks'),
     Input('name1-radio', 'options'),
-    Input('name2-radio', 'options'),)
-def update_chart(n_clicks, name1_radio, name2_radio):
+    Input('name2-radio', 'options'))
+def update_chart(name1_radio, name2_radio):
     children_list = []
     name1_radio_list = [row['value'] for row in name1_radio]
     name2_radio_list = [row['value'] for row in name2_radio]
@@ -316,7 +339,7 @@ def update_chart(n_clicks, name1_radio, name2_radio):
         children_list.append(
             html.Label(vcf_file_type)
         )
-        df_res = chart(filelist,vcf_file_type)
+        df_res = chart(filedict,vcf_file_type)
         columns = []
         for i in df_res.columns:
             if i != 'total':
@@ -327,9 +350,9 @@ def update_chart(n_clicks, name1_radio, name2_radio):
         children_list.append(
             dash_table.DataTable(data=df_res.to_dict('records'),
                                  columns=columns,
-                                 tooltip_data=[{column: {'value': value, 'type': 'markdown'}
-                                                for column, value in row.items()
-                                                } for row in df_res[['cromwell_workflow_id']].to_dict('records')],
+                                 # tooltip_data=[{column: {'value': value, 'type': 'markdown'}
+                                 #                for column, value in row.items()
+                                 #                } for row in df_res[['names']].to_dict('records')],
                                  # Overflow into ellipsis
                                  style_cell={
                                      'overflow': 'hidden',
@@ -345,44 +368,44 @@ def update_chart(n_clicks, name1_radio, name2_radio):
     )
 
 
-@app.callback(
-    Output('output-state', 'children'),
-    Input('submit-val', 'n_clicks'),
-    State('path', 'value'))
-def add_new_vcf(n_clicks, path):
-    tmp = u'''
-            The Button has been pressed {} times,nothing has been added.
-        '''.format(n_clicks)
-    cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',path).group(0)
-    if os.path.exists(path):
-        filelist = load_filelist_id('stored_vcf_filelist.json')
-        if cromwell_workflow_id in filelist:
-            tmp = 'Sorry, the path has been added'
-        else:
-            filelist.append(path)
-            save_filelist(filelist)
-            data_prepare(filelist)
-            tmp = u'''
-                {} has been added successfully.
-            '''.format(cromwell_workflow_id)
-    else:
-        tmp = 'The path deos not exists.'
+# @app.callback(
+#     Output('output-state', 'children'),
+#     Input('submit-val', 'n_clicks'),
+#     State('path', 'value'))
+# def add_new_vcf(n_clicks, path):
+#     tmp = u'''
+#             The Button has been pressed {} times,nothing has been added.
+#         '''.format(n_clicks)
+#     cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',path).group(0)
+#     if os.path.exists(path):
+#         filelist = load_filelist_id('stored_vcf_filelist.json')
+#         if cromwell_workflow_id in filelist:
+#             tmp = 'Sorry, the path has been added'
+#         else:
+#             filelist.append(path)
+#             save_filelist(filelist)
+#             data_prepare(filelist)
+#             tmp = u'''
+#                 {} has been added successfully.
+#             '''.format(cromwell_workflow_id)
+#     else:
+#         tmp = 'The path deos not exists.'
+#
+#     return tmp
 
-    return tmp
 
-
-@app.callback(
-    Output('name1', 'options'),
-    Output('name2', 'options'),
-    Input('submit-val', 'n_clicks'))
-def update_names(n_clicks):
-
-    name1_options = load_filelist_id('stored_vcf_filelist.json')
-
-    # if os.path.exists(path):
-    #     if path not in list(filedict.values()) and filename not in list(filedict.keys()):
-    #         name1_options += [filename]
-    return name1_options, name1_options
+# @app.callback(
+#     Output('name1', 'options'),
+#     Output('name2', 'options'),
+#     Input('submit-val', 'n_clicks'))
+# def update_names(n_clicks):
+#
+#     name1_options = load_filelist_id('stored_vcf_filelist.json')
+#
+#     # if os.path.exists(path):
+#     #     if path not in list(filedict.values()) and filename not in list(filedict.keys()):
+#     #         name1_options += [filename]
+#     return name1_options, name1_options
 
 
 if __name__ == '__main__':
