@@ -6,7 +6,7 @@ VCF Inspector is a web application to visualize any two vcf files. How to run VC
 
 First, install the libraries needed. See in requirements.txt
 ```
-python VCF_Inspector.py
+python VCF_Inspector.py -i <input_file>
 ```
 
 **docker**:
