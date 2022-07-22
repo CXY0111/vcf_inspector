@@ -1,7 +1,7 @@
 from dash import Dash, html, dcc, Input, Output, State, dash_table, callback
 import plotly.express as px
 from utils import venn_diagram, chart, get_filters_dict, get_used_filters, data_prepare, load_input_paths, \
-    load_input_names, load_input_dict
+    load_input_names, load_input_dict, get_radio_options
 import plotly.graph_objects as go
 from dash.dash_table.Format import Format, Scheme, Trim
 import re
@@ -27,12 +27,14 @@ filedict = load_input_dict(input_file)
 # save_filelist_json(filelist)
 # first, prepare the data
 data_prepare(filelist)
+
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([
     # title
-    html.H1(children='This is web application to analyze and compare TinDaisy'),
+    html.H1(children='VCF inspector'),
+    html.H4(children='--This is web application to analyze and compare TinDaisy'),
 
     # html.Label('Please add path of new vcf files.'),
     #
@@ -120,7 +122,14 @@ app.layout = html.Div([
         html.H4(children='Chart of all VCF files:'),
         # my_output
         html.Div([
-            html.Div(id='my_output', style={'width': '95%'}),
+            html.Div(id='my_output',
+                     style={'width': '95%'}),
+            dcc.Interval(
+                id="load_interval",
+                n_intervals=0,
+                max_intervals=0, #<-- only run once
+                interval=1
+            )
         ])
 
     ], style={'padding': '0px 20px 20px 20px'})
@@ -134,22 +143,9 @@ def set_name1_radio_options(selected_name):
     path = filedict[selected_name]
     selected_cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
                                               path).group(0)
-    res = []
+
     out = 'dat/' + selected_cromwell_workflow_id + '/'
-    if os.path.exists(out + 'ProximityFiltered.txt'):
-        res.append('ProximityFiltered')
-    if os.path.exists(out + 'mutect_somatic_depth_filter.output.txt'):
-        res.append('mutect_somatic_depth_filter')
-    if os.path.exists(out + 'pindel_somatic_depth_filter.output.txt'):
-        res.append('pindel_somatic_depth_filter')
-    if os.path.exists(out + 'strelka_indel_somatic_depth_filter.output.txt'):
-        res.append('strelka_indel_somatic_depth_filter')
-    if os.path.exists(out + 'strelka_snv_somatic_depth_filter.output.txt'):
-        res.append('strelka_snv_somatic_depth_filter')
-    if os.path.exists(out + 'varscan_indel_somatic_depth_filter.output.txt'):
-        res.append('varscan_indel_somatic_depth_filter')
-    if os.path.exists(out + 'varscan_snv_somatic_depth_filter.output.txt'):
-        res.append('varscan_snv_somatic_depth_filter')
+    res = get_radio_options(out)
     return [{'label': i, 'value': i} for i in res]
 
 
@@ -167,22 +163,9 @@ def set_name2_radio_options(selected_name):
     path = filedict[selected_name]
     selected_cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
                                               path).group(0)
-    res = []
+
     out = 'dat/' + selected_cromwell_workflow_id + '/'
-    if os.path.exists(out + 'ProximityFiltered.txt'):
-        res.append('ProximityFiltered')
-    if os.path.exists(out + 'mutect_somatic_depth_filter.output.txt'):
-        res.append('mutect_somatic_depth_filter')
-    if os.path.exists(out + 'pindel_somatic_depth_filter.output.txt'):
-        res.append('pindel_somatic_depth_filter')
-    if os.path.exists(out + 'strelka_indel_somatic_depth_filter.output.txt'):
-        res.append('strelka_indel_somatic_depth_filter')
-    if os.path.exists(out + 'strelka_snv_somatic_depth_filter.output.txt'):
-        res.append('strelka_snv_somatic_depth_filter')
-    if os.path.exists(out + 'varscan_indel_somatic_depth_filter.output.txt'):
-        res.append('varscan_indel_somatic_depth_filter')
-    if os.path.exists(out + 'varscan_snv_somatic_depth_filter.output.txt'):
-        res.append('varscan_snv_somatic_depth_filter')
+    res = get_radio_options(out)
     return [{'label': i, 'value': i} for i in res]
 
 
@@ -244,7 +227,7 @@ def update_graph(name1, name1_radio, name2, name2_radio, caller):
     else:
         path2 = 'dat/' + cromwell_workflow_id2 + '/' + name2_radio + '.output.txt'
 
-    com, ua, ub = venn_diagram(path1, path2, caller)
+    com, ua, ub = venn_diagram([path1, path2], caller)
 
     fig = go.Figure()
 
@@ -313,7 +296,7 @@ def update_description(name1, name1_radio, name2, name2_radio, options):
         path2 += 'call-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf'
     else:
         path2 += 'call-depth_filter_' + name2_radio[:-21] + '/execution/somatic_depth_filter.output.vcf'
-    filters_dict = get_filters_dict(path1, path2)
+    filters_dict = get_filters_dict([path1, path2])
     strs = ''
     for keys, values in filters_dict.items():
         # print(keys)
@@ -325,16 +308,21 @@ def update_description(name1, name1_radio, name2, name2_radio, options):
 
 @callback(
     Output('my_output', component_property='children'),
-    Input('name1-radio', 'options'),
-    Input('name2-radio', 'options'))
-def update_chart(name1_radio, name2_radio):
-    children_list = []
-    name1_radio_list = [row['value'] for row in name1_radio]
-    name2_radio_list = [row['value'] for row in name2_radio]
-    union_list = list(set(name1_radio_list).union(set(name2_radio_list)))
+    # Input('name1-radio', 'options'),
+    # Input('name2-radio', 'options'),
+    Input('load_interval', 'n_intervals'))
+def update_chart(n):   # name1_radio, name2_radio,
+    union_list = []
+    for file in filelist:
+        cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
+                                         file).group(0)
+        out = 'dat/' + cromwell_workflow_id + '/'
+        radion_options = get_radio_options(out)
+        union_list = list(set(union_list).union(set(radion_options)))
 
     count = 0
     print('Making charts:')
+    children_list = []
     for vcf_file_type in union_list:
         count += 1
         children_list.append(
@@ -412,4 +400,4 @@ def update_chart(name1_radio, name2_radio):
 
 
 if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', port=8080, debug=True)
+    app.run_server(host='0.0.0.0', port=8080, debug=False, dev_tools_silence_routes_logging=True)

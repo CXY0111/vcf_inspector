@@ -3,40 +3,90 @@ import os
 import re
 import json
 from tqdm import tqdm
+from io import BytesIO
+import base64
+import matplotlib.pyplot as plt
 
 
-def venn_diagram(file1, file2, caller):
+def fig_to_uri(in_fig, close_all=True, **save_args):
+    # https://github.com/4QuantOSS/DashIntro/blob/master/notebooks/Tutorial.ipynb
+    """
+    Save a figure as a URI    type: (plt.Figure) -> str
+    :param in_fig:
+    :return:
+    """
+    out_img = BytesIO()
+    in_fig.savefig(out_img, format='png', **save_args)
+    if close_all:
+        in_fig.clf()
+        plt.close('all')
+    out_img.seek(0)  # rewind file
+    encoded = base64.b64encode(out_img.read()).decode("ascii").replace("\n", "")
+    return "data:image/png;base64,{}".format(encoded)
+
+
+def venn_diagram(files, caller):
     """
         get the venn diagram numbers(uniqueA,common,uniqueB) given the two vcf files
 
-        :param file1: path to filtered vcf file1
-        :param file2: path to filtered vcf file2
+        :param files: list of paths to vcf file
         :param caller: compare the variants with the selected filter
         :return: common number, uniqueA number, uniqueB number
         :rtype: int
         """
+    if len(files) == 2:
+        dfA = pd.read_table(files[0], header=None)
+        dfB = pd.read_table(files[1], header=None)
 
-    dfA = pd.read_table(file1, header=None)
-    dfB = pd.read_table(file2, header=None)
+        if caller == 'vcf_all':
+            dfA = dfA[[0, 1]]
+            dfB = dfB[[0, 1]]
+        else:  # if caller in ['af','dbsnp','ffpe','merge','PASS','proximity']
+            dfA = dfA[dfA[2] == caller][[0, 1]]
+            dfB = dfB[dfB[2] == caller][[0, 1]]
 
-    # if caller in ['af','dbsnp','ffpe','merge','PASS','proximity']:
-    if caller == 'vcf_all':
-        dfA_filter = dfA[[0, 1]]
-        dfB_filter = dfB[[0, 1]]
-    else:
-        dfA_filter = dfA[dfA[2] == caller][[0, 1]]
-        dfB_filter = dfB[dfB[2] == caller][[0, 1]]
-    # else:
-    #     dfA_filter = dfA[dfA[2] == 'PASS'][[0, 1]]
-    #     dfB_filter = dfB[dfB[2] == 'PASS'][[0, 1]]
+        # return common, uniqueA, uniqueB in venn diagram
+        return len(pd.merge(dfA, dfB, how='inner')), \
+               len(dfA.merge(dfB, indicator=True, how='left').loc[lambda x: x['_merge'] != 'both']), \
+               len(dfA.merge(dfB, indicator=True, how='right').loc[lambda x: x['_merge'] != 'both'])
+    elif len(files) == 3:
+        dfA = pd.read_table(files[0], header=None)
+        dfB = pd.read_table(files[1], header=None)
+        dfC = pd.read_table(files[2], header=None)
 
-    # return common, uniqueA, uniqueB in venn diagram
-    return len(pd.merge(dfA_filter, dfB_filter, how='inner')), \
-           len(dfA_filter.merge(dfB_filter, indicator=True, how='left').loc[lambda x: x['_merge'] != 'both']), \
-           len(dfA_filter.merge(dfB_filter, indicator=True, how='right').loc[lambda x: x['_merge'] != 'both'])
+        if caller == 'vcf_all':
+            dfA = dfA[[0, 1]]
+            dfB = dfB[[0, 1]]
+            dfC = dfC[[0, 1]]
+        else:  # if caller in ['af','dbsnp','ffpe','merge','PASS','proximity']
+            dfA = dfA[dfA[2] == caller][[0, 1]]
+            dfB = dfB[dfB[2] == caller][[0, 1]]
+            dfC = dfC[dfC[2] == caller][[0, 1]]
+
+        dfA['A'] = dfA[0] + '_' + dfA[1].astype('str')
+        dfB['B'] = dfB[0] + '_' + dfB[1].astype('str')
+        dfC['C'] = dfC[0] + '_' + dfC[1].astype('str')
+
+        # https://towardsdatascience.com/professional-venn-diagrams-in-python-638abfff39cc
+        A = set(dfA.A)
+        B = set(dfB.B)
+        C = set(dfC.C)
+
+        AB_overlap = A & B  # compute intersection of set A & set B
+        AC_overlap = A & C
+        BC_overlap = B & C
+        ABC_overlap = A & B & C
+        A_rest = A - AB_overlap - AC_overlap  # see left graphic
+        B_rest = B - AB_overlap - BC_overlap
+        C_rest = C - AC_overlap - BC_overlap
+        AB_only = AB_overlap - ABC_overlap  # see right graphic
+        AC_only = AC_overlap - ABC_overlap
+        BC_only = BC_overlap - ABC_overlap
+        return len(AB_overlap), len(AC_overlap), len(BC_overlap), len(ABC_overlap), len(A_rest), len(B_rest), len(
+            C_rest), len(AB_only), len(AC_only), len(BC_only)
 
 
-def chart(filedict,vcf_file_type):
+def chart(filedict, vcf_file_type):
     """
         get the distribution of each vcf file in the file dict
 
@@ -48,22 +98,26 @@ def chart(filedict,vcf_file_type):
 
     filelist = list(filedict.values())
     if vcf_file_type == 'ProximityFiltered':
-        out_list = ['dat/' + re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',path).group(0) + '/ProximityFiltered.txt' for path in filelist]
+        out_list = ['dat/' + re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}', path).group(
+            0) + '/ProximityFiltered.txt' for path in filelist]
     else:
-        out_list = ['dat/' + re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',path).group(0) + '/' + vcf_file_type + '.output.txt' for path in filelist]
+        out_list = ['dat/' + re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}', path).group(
+            0) + '/' + vcf_file_type + '.output.txt' for path in filelist]
     used_filters = get_used_filters(out_list)
     if 'vcf_all' in used_filters:
         used_filters.remove('vcf_all')
     df_res = pd.DataFrame(columns=['name'] + used_filters + ['total'])
-    for name,path in filedict.items():
+    for name, path in filedict.items():
         numbers = {}
         cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
                                          path).group(0)
         numbers['name'] = name
         if vcf_file_type == 'ProximityFiltered':
-            path = 'dat/' + re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}', path).group(0) + '/ProximityFiltered.txt'
+            path = 'dat/' + re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}', path).group(
+                0) + '/ProximityFiltered.txt'
         else:
-            path = 'dat/' + re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}', path).group(0) + '/' + vcf_file_type + '.output.txt'
+            path = 'dat/' + re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}', path).group(
+                0) + '/' + vcf_file_type + '.output.txt'
         df = pd.read_table(path, header=None)
         total = len(df)
         for filter in used_filters:
@@ -74,32 +128,44 @@ def chart(filedict,vcf_file_type):
     return df_res
 
 
-def get_filters_dict(vcf_file1, vcf_file2):
+def get_filters_dict(vcf_file_list):                      #vcf_file1, vcf_file2
     """
     Read two vcf files to get all the filters and their description
 
-    :param vcf_file2: Path to a vcf file 1.
-    :param vcf_file1: Path to a vcf file 2.
+    :param vcf_file_list: list of Paths to a vcf files.
     :return: dict of all filters and description
     :rtype: dict
     """
-    vcf_dict = []
-    with open(vcf_file1, 'r') as invcf:
-        for line in invcf:
-            if line.startswith('#'):
-                if 'FILTER=' in line:
-                    vcf_dict.append(re.findall('<([^】]+)>', line)[0])
-    vcf_dict = {item.split(',')[0].split('=')[1]: item.split(',')[1].split('=')[1][1:-1] for item in vcf_dict}
 
-    with open(vcf_file2, 'r') as invcf:
-        for line in invcf:
-            if line.startswith('#'):
-                if 'FILTER=' in line:
-                    str1 = re.findall('<([^】]+)>', line)[0]
-                    if (
-                            str1.split(',')[0].split('=')[1],
-                            str1.split(',')[1].split('=')[1][1:-1]) not in vcf_dict.items():
-                        vcf_dict[str1.split(',')[0].split('=')[1]] = str1.split(',')[1].split('=')[1][1:-1]
+    vcf_dict = {}
+    for vcf_file in vcf_file_list:
+        with open(vcf_file, 'r') as invcf:
+            for line in invcf:
+                if line.startswith('#'):
+                    if 'FILTER=' in line:
+                        str1 = re.findall('<([^】]+)>', line)[0]
+                        if (
+                                str1.split(',')[0].split('=')[1],
+                                str1.split(',')[1].split('=')[1][1:-1]) not in vcf_dict.items():
+                            vcf_dict[str1.split(',')[0].split('=')[1]] = str1.split(',')[1].split('=')[1][1:-1]
+
+    # vcf_dict = []
+    # with open(vcf_file1, 'r') as invcf:
+    #     for line in invcf:
+    #         if line.startswith('#'):
+    #             if 'FILTER=' in line:
+    #                 vcf_dict.append(re.findall('<([^】]+)>', line)[0])
+    # vcf_dict = {item.split(',')[0].split('=')[1]: item.split(',')[1].split('=')[1][1:-1] for item in vcf_dict}
+    #
+    # with open(vcf_file2, 'r') as invcf:
+    #     for line in invcf:
+    #         if line.startswith('#'):
+    #             if 'FILTER=' in line:
+    #                 str1 = re.findall('<([^】]+)>', line)[0]
+    #                 if (
+    #                         str1.split(',')[0].split('=')[1],
+    #                         str1.split(',')[1].split('=')[1][1:-1]) not in vcf_dict.items():
+    #                     vcf_dict[str1.split(',')[0].split('=')[1]] = str1.split(',')[1].split('=')[1][1:-1]
 
     return vcf_dict
 
@@ -112,7 +178,7 @@ def get_used_filters(path_list):
     :return: all the filters used in this two vcf files
     :rtype: list
     """
-    df_res = pd.DataFrame(columns=[0,1,2])
+    df_res = pd.DataFrame(columns=[0, 1, 2])
     filters = []
     for path in path_list:
         df = pd.read_table(path, header=None)
@@ -146,9 +212,9 @@ def data_prepare(filelist):
             os.system('mkdir -p ' + out)
 
         print('Processing', cromwell_workflow_id)
-        directories = ['call-snp_indel_proximity_filter','call-depth_filter_mutect','call-depth_filter_pindel',
-                       'call-depth_filter_strelka_indel','call-depth_filter_strelka_snv',
-                       'call-depth_filter_varscan_indel','call-depth_filter_varscan_snv']
+        directories = ['call-snp_indel_proximity_filter', 'call-depth_filter_mutect', 'call-depth_filter_pindel',
+                       'call-depth_filter_strelka_indel', 'call-depth_filter_strelka_snv',
+                       'call-depth_filter_varscan_indel', 'call-depth_filter_varscan_snv']
         for dir in tqdm(directories):
             if dir == 'call-snp_indel_proximity_filter':
                 vcf_path = path + dir + '/execution/output/ProximityFiltered.vcf'
@@ -157,7 +223,7 @@ def data_prepare(filelist):
                     os.system('grep -v "^#" ' + vcf_path + ' | cut -f 1,2,7 | sort > ' + vcf_out)
             else:
                 vcf_path = path + dir + '/execution/somatic_depth_filter.output.vcf'
-                filter = re.sub('call-depth_filter_','',dir)
+                filter = re.sub('call-depth_filter_', '', dir)
                 vcf_out = out + filter + '_somatic_depth_filter.output.txt'
                 if os.path.exists(vcf_path) and not os.path.exists(vcf_out):
                     os.system('grep -v "^#" ' + vcf_path + ' | cut -f 1,2,7 | sort > ' + vcf_out)
@@ -206,6 +272,25 @@ def data_prepare(filelist):
         #         'grep -v "^#" ' + path + 'call-depth_filter_varscan_snv/execution/somatic_depth_filter.output.vcf | cut -f 1,2,7 | sort > ' + out + 'varscan_snv_somatic_depth_filter.output.txt')
 
 
+def get_radio_options(out):
+    res = []
+    if os.path.exists(out + 'ProximityFiltered.txt'):
+        res.append('ProximityFiltered')
+    if os.path.exists(out + 'mutect_somatic_depth_filter.output.txt'):
+        res.append('mutect_somatic_depth_filter')
+    if os.path.exists(out + 'pindel_somatic_depth_filter.output.txt'):
+        res.append('pindel_somatic_depth_filter')
+    if os.path.exists(out + 'strelka_indel_somatic_depth_filter.output.txt'):
+        res.append('strelka_indel_somatic_depth_filter')
+    if os.path.exists(out + 'strelka_snv_somatic_depth_filter.output.txt'):
+        res.append('strelka_snv_somatic_depth_filter')
+    if os.path.exists(out + 'varscan_indel_somatic_depth_filter.output.txt'):
+        res.append('varscan_indel_somatic_depth_filter')
+    if os.path.exists(out + 'varscan_snv_somatic_depth_filter.output.txt'):
+        res.append('varscan_snv_somatic_depth_filter')
+    return res
+
+
 def save_filelist_json(filelist):
     filename = 'dat/stored_vcf_filelist.json'
     with open(filename, 'w') as f:
@@ -227,7 +312,7 @@ def load_input_paths(input_file):
             line = re.sub('\n', '', line)
             if not line or line.startswith('#'):
                 continue
-            line = re.sub('.+:','',line)
+            line = re.sub('.+:', '', line)
 
             if line[-1] != '/':
                 line += '/'
@@ -263,17 +348,3 @@ def load_input_dict(input_file):
                 path += '/'
             result_dict[name] = path
     return result_dict
-
-
-
-
-# def load_filelist_id(filename):
-#     filename = 'dat/' + filename
-#     with open(filename) as f:
-#         filelist = json.loads(f.read())
-#     res = []
-#     for path in filelist:
-#         cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
-#                                          path).group(0)
-#         res.append(cromwell_workflow_id)
-#     return res

@@ -1,7 +1,8 @@
 # input files, should be in format of <case_name>:<path>
 # this is example on katmai
-#CTSP-AD3X_RunA:/diskmnt/Projects/Users/chen.xiangyu/dash/b17d5672-572f-463b-88ad-0ac7b06156ad
-#CTSP-AD3X_RunB:/diskmnt/Projects/Users/chen.xiangyu/dash/0f45d954-d951-4927-a2ba-476e319a6a88
+CTSP-AD3X_RunA:/diskmnt/Projects/Users/chen.xiangyu/dash/b17d5672-572f-463b-88ad-0ac7b06156ad
+CTSP-AD3X_RunB:/diskmnt/Projects/Users/chen.xiangyu/dash/0f45d954-d951-4927-a2ba-476e319a6a88
+CTSP-AD3X_RunC:/diskmnt/Projects/Users/chen.xiangyu/dash/5d8f2000-c89b-45d6-9fa3-f881b90896f1
 # this is example on compute1
-RunA:/storage1/fs1/dinglab//Active/Projects/rmashl/cromwell-data/cromwell-workdir/cromwell-executions/tindaisy2.cwl/04491d22-a7f7-4a60-a9c6-22ba9ab45b50/analysis
-RunB:/storage1/fs1/dinglab/Active/Projects/rmashl/cromwell-data/cromwell-workdir/cromwell-executions/tindaisy2.cwl/7b1d90ac-f6ed-40cf-a00c-46352499c71a/analysis
+#RunA:/storage1/fs1/dinglab//Active/Projects/rmashl/cromwell-data/cromwell-workdir/cromwell-executions/tindaisy2.cwl/04491d22-a7f7-4a60-a9c6-22ba9ab45b50/analysis
+#RunB:/storage1/fs1/dinglab/Active/Projects/rmashl/cromwell-data/cromwell-workdir/cromwell-executions/tindaisy2.cwl/7b1d90ac-f6ed-40cf-a00c-46352499c71a/analysis
