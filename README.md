@@ -1,6 +1,6 @@
 # VCF Inspector
 
-VCF Inspector is a web application to visualize any two vcf files. How to run VCF Inspector?
+VCF Inspector is a web application to visualize any two or three vcf files. How to run VCF Inspector?
 
 **directly**:
 
