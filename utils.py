@@ -1,5 +1,5 @@
 import pandas as pd
-import os
+import os, sys
 import re
 import json
 from tqdm import tqdm
@@ -320,6 +320,8 @@ def data_prepare(filelist):
         """
     print('Data Prepare:')
     for path in filelist:
+        if not os.path.exists(path):
+            sys.exit('Please check the input file path')
         cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
                                          path).group(0)
         out = 'dat/' + cromwell_workflow_id + '/'
