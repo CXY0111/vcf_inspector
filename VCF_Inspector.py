@@ -358,4 +358,4 @@ def update_style(venn_type):
 
 
 if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', port=8080, debug=True, dev_tools_silence_routes_logging=True)
+    app.run_server(host='0.0.0.0', port=8080, debug=False, dev_tools_silence_routes_logging=True)
