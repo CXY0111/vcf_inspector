@@ -5,7 +5,7 @@ import json
 from tqdm import tqdm
 from io import BytesIO
 import base64
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 
 def fig_to_uri(in_fig, close_all=True, **save_args):
@@ -27,13 +27,13 @@ def fig_to_uri(in_fig, close_all=True, **save_args):
 
 def venn_diagram(files, caller):
     """
-        get the venn diagram numbers(uniqueA,common,uniqueB) given the two vcf files
+    get the venn diagram numbers(uniqueA,common,uniqueB) given the two vcf files
 
-        :param files: list of paths to vcf file
-        :param caller: compare the variants with the selected filter
-        :return: common number, uniqueA number, uniqueB number
-        :rtype: int
-        """
+    :param files: list of paths to vcf file
+    :param caller: compare the variants with the selected filter
+    :return: common number, uniqueA number, uniqueB number
+    :rtype: int
+    """
     if len(files) == 2:
         dfA = pd.read_table(files[0], header=None)
         dfB = pd.read_table(files[1], header=None)
@@ -86,15 +86,131 @@ def venn_diagram(files, caller):
             C_rest), len(AB_only), len(AC_only), len(BC_only)
 
 
+def draw_venn_figure(number_list):
+    """
+    Draw the figure of venn diagram. number_list==3 -> venn2; number_list==7 -> venn3
+
+    :param number_list: return of function venn_diagram.
+                        venn2 = [ua, com, ub]
+                        venn3 = [A_rest, B_rest, C_rest, AB_only, AC_only, BC_only, ABC_overlap]
+    :return: fig of venn diagram
+    :rtype: fig
+    """
+
+    venn_type = 'venn2' if len(number_list) == 3 else 'venn3'
+    fig = go.Figure()
+
+    # add trace of numbers
+    if venn_type == 'venn2':
+        fig.add_trace(go.Scatter(
+            x=[0.8, 1.75, 2.7, 0.8, 1.75, 2.7],
+            y=[1, 1, 1, 0.75, 0.75, 0.75],
+            text=["SetA", "Common", "SetB", number_list[0], number_list[1], number_list[2]],
+            mode="text",
+            textfont=dict(
+                color="black",
+                size=18,
+                family="Arail",
+            ),
+            name='trace0'
+        ))
+    else:  # venn_type == 'venn3'
+        fig.add_trace(go.Scatter(
+            x=[-0.25, 7.25, 3.5],
+            y=[1, 1, 7.5],
+            text=["SetA", "SetB", "SetC"],
+            mode="text",
+            textfont=dict(
+                color="black",
+                size=20,
+                family="Arail",
+            ),
+            name='Sets'
+        ))
+        # Create scatter trace of text labels
+        fig.add_trace(go.Scatter(
+            x=[1.5, 5.5, 3.5],
+            y=[1.5, 1.5, 6],
+            text=[number_list[0], number_list[1], number_list[2]],
+            mode="text",
+            textfont=dict(
+                color="black",
+                size=17,
+                family="Arail",
+            ),
+            name='only_trace'
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=[3.5, 2, 5, 3.5],
+            y=[1.5, 4.25, 4.25, 3.25],
+            text=[number_list[3], number_list[4], number_list[5], number_list[6]],
+            mode="text",
+            textfont=dict(
+                color="black",
+                size=14,
+                family="Arail",
+            ),
+            name='common_trace'
+        ))
+
+    # Update axes properties
+    fig.update_xaxes(
+        showticklabels=False,
+        showgrid=False,
+        zeroline=False,
+    )
+
+    fig.update_yaxes(
+        showticklabels=False,
+        showgrid=False,
+        zeroline=False,
+        scaleanchor="x",
+        scaleratio=1,
+    )
+
+    if venn_type == 'venn2':
+        # Add circles
+        fig.add_shape(type="circle",
+                      line_color="blue", fillcolor="blue",
+                      x0=0.25, y0=0, x1=2.25, y1=2
+                      )
+        fig.add_shape(type="circle",
+                      line_color="gray", fillcolor="gray",
+                      x0=1.25, y0=0, x1=3.25, y1=2
+                      )
+    else:  # venn_type == 'venn3'
+        # Add circles
+        fig.add_shape(type="circle",
+                      line_color="blue", fillcolor="blue",
+                      x0=-0.25, y0=0, x1=4.75, y1=5
+                      )
+        fig.add_shape(type="circle",
+                      line_color="gray", fillcolor="gray",
+                      x0=2.25, y0=0, x1=7.25, y1=5
+                      )
+        fig.add_shape(type="circle",
+                      line_color="yellow", fillcolor="yellow",
+                      x0=1, y0=2.25, x1=6, y1=7.25
+                      )
+    fig.update_shapes(opacity=0.3, xref="x", yref="y")
+
+    fig.update_layout(margin={'l': 40, 'b': 40, 't': 10, 'r': 0})
+
+    fig.layout.plot_bgcolor = 'rgba(0,0,0,0)'
+
+    return fig
+
+
 def chart(filedict, vcf_file_type):
     """
-        get the distribution of each vcf file in the file dict
+    get the distribution of each vcf file in the file dict
 
-        :param filedict: filedict that contains all the vcf files
-        :param vcf_file_type: which kind of vcf file, ProximityFiltered? mutect_somatic_depth_filter?
-        :return: df of the distribution
-        :rtype: dataframe
-        """
+    :param filedict: filedict that contains all the vcf files
+    :param vcf_file_type: which kind of vcf file, ProximityFiltered? mutect_somatic_depth_filter?
+    :return: df of the distribution
+    :rtype: dataframe
+    """
 
     filelist = list(filedict.values())
     if vcf_file_type == 'ProximityFiltered':
@@ -128,7 +244,7 @@ def chart(filedict, vcf_file_type):
     return df_res
 
 
-def get_filters_dict(vcf_file_list):                      #vcf_file1, vcf_file2
+def get_filters_dict(vcf_file_list):  # vcf_file1, vcf_file2
     """
     Read two vcf files to get all the filters and their description
 
@@ -348,3 +464,38 @@ def load_input_dict(input_file):
                 path += '/'
             result_dict[name] = path
     return result_dict
+
+
+def name_to_dir_path(filedict, name):
+    """
+    get the path to the dat directory from name
+
+    :param filedict: file dict that contains pair of name and directory path
+    :param name: name of the path
+    :return: path
+    :rtype: str
+    """
+
+    path = filedict[name]
+    cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
+                                     path).group(0)
+    path = 'dat/' + cromwell_workflow_id + '/'
+
+    return path
+
+
+def dir_to_file_path(dir, name_radio):
+    """
+    get the path to the dat directory from name
+
+    :param dir: path to the dat directory
+    :param name_radio: which file to choose
+    :return: path
+    :rtype: str
+    """
+    if name_radio == 'ProximityFiltered':
+        dir += name_radio + '.txt'
+    else:
+        dir += name_radio + '.output.txt'
+
+    return dir

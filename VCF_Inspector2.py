@@ -233,9 +233,9 @@ def update_graph(name1, name1_radio, name2, name2_radio, caller):
 
     # Create scatter trace of text labels
     fig.add_trace(go.Scatter(
-        x=[1, 1.75, 2.5, 1, 1.75, 2.5],
+        x=[0.8, 1.75, 2.7, 0.8, 1.75, 2.7],
         y=[1, 1, 1, 0.75, 0.75, 0.75],
-        text=["$Unique RunA$", "$Common$", "$Unique RunB$", ua, com, ub],
+        text=["SetA", "Common", "SetB", ua, com, ub],
         mode="text",
         textfont=dict(
             color="black",
@@ -248,14 +248,16 @@ def update_graph(name1, name1_radio, name2, name2_radio, caller):
     # Update axes properties
     fig.update_xaxes(
         showticklabels=False,
-        showgrid=True,
+        showgrid=False,
         zeroline=False,
     )
 
     fig.update_yaxes(
         showticklabels=False,
-        showgrid=True,
+        showgrid=False,
         zeroline=False,
+        scaleanchor="x",
+        scaleratio=1,
     )
 
     # Add circles
@@ -270,6 +272,8 @@ def update_graph(name1, name1_radio, name2, name2_radio, caller):
     fig.update_shapes(opacity=0.3, xref="x", yref="y")
 
     fig.update_layout(margin={'l': 40, 'b': 40, 't': 10, 'r': 0})
+
+    fig.layout.plot_bgcolor = 'rgba(0,0,0,0)'
 
     return fig
 
@@ -400,4 +404,4 @@ def update_chart(n):   # name1_radio, name2_radio,
 
 
 if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', port=8080, debug=False, dev_tools_silence_routes_logging=True)
+    app.run_server(host='0.0.0.0', port=8080, debug=True, dev_tools_silence_routes_logging=True)

@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib_venn import venn2, venn3
 from collections import Counter
 
+
 # parser = argparse.ArgumentParser(description="VCF inspector")
 # parser.add_argument("-i", "--input", type=str, dest="input", default='input_files.txt',
 #                     help="input a txt file that contains paths each line")
@@ -23,7 +24,7 @@ from collections import Counter
 # data_prepare(filelist)
 
 
-def start_app(input_file,filelist,filenames,filedict):
+def start_app(input_file, filelist, filenames, filedict):
     external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
     app = Dash(__name__, external_stylesheets=external_stylesheets)
 
@@ -59,39 +60,41 @@ def start_app(input_file,filelist,filenames,filedict):
             html.H2('Venn Diagram: '),
 
             html.Div([
-                dcc.Dropdown(
-                    filenames,
-                    filenames[0],
-                    id='name1',
-                ),
-                dcc.RadioItems(id='name1-radio'),
-            ], style={'width': '30%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                html.Div([
+                    dcc.Dropdown(
+                        filenames,
+                        filenames[0],
+                        id='name1',
+                    ),
+                    dcc.RadioItems(id='name1-radio'),
+                ], style={'width': '30%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
-            html.Div([
-                # placerholder
-            ], style={'width': '3%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                html.Div([
+                    # placerholder
+                ], style={'width': '3%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
-            html.Div([
-                dcc.Dropdown(
-                    filenames,
-                    filenames[1],
-                    id='name2',
-                ),
-                dcc.RadioItems(id='name2-radio'),
-            ], style={'width': '30%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                html.Div([
+                    dcc.Dropdown(
+                        filenames,
+                        filenames[1],
+                        id='name2',
+                    ),
+                    dcc.RadioItems(id='name2-radio'),
+                ], style={'width': '30%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
-            html.Div([
-                # placerholder
-            ], style={'width': '3%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                html.Div([
+                    # placerholder
+                ], style={'width': '3%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
-            html.Div([
-                dcc.Dropdown(
-                    filenames,
-                    filenames[2],
-                    id='name3',
-                ),
-                dcc.RadioItems(id='name3-radio'),
-            ], style={'width': '30%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                html.Div([
+                    dcc.Dropdown(
+                        filenames,
+                        filenames[2],
+                        id='name3',
+                    ),
+                    dcc.RadioItems(id='name3-radio'),
+                ], style={'width': '30%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+            ])
 
         ], style={'padding': '50px 5px', }),  # 'backgroundColor': '#FFD482'
 
@@ -112,8 +115,8 @@ def start_app(input_file,filelist,filenames,filedict):
             ], style={'width': '8%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
             html.Div([
-                # dcc.Graph(id='venn_diagram',),
-                html.Img(id='venn_diagram', src='')
+                dcc.Graph(id='venn_diagram',),
+                # html.Img(id='venn_diagram', src='')
             ], style={'width': '40%', 'display': 'inline-block', 'verticalAlign': 'top'}),
 
             html.Div([
@@ -123,7 +126,8 @@ def start_app(input_file,filelist,filenames,filedict):
             html.Div([
                 dcc.Markdown("""**Description of filters:**"""),
                 html.Pre(id='description', style={'border': 'thin lightgrey solid', 'overflowX': 'scroll'})
-            ], style={'width': '47%', 'display': 'inline-block', 'verticalAlign': 'top', }),  # 'backgroundColor': '#FFD482'
+            ], style={'width': '47%', 'display': 'inline-block', 'verticalAlign': 'top', }),
+            # 'backgroundColor': '#FFD482'
         ]),
 
         # chart
@@ -144,7 +148,6 @@ def start_app(input_file,filelist,filenames,filedict):
         ], style={'padding': '0px 20px 20px 20px'})
     ])
 
-
     @app.callback(
         Output('name1-radio', 'options'),
         Input('name1', 'value'))
@@ -157,13 +160,11 @@ def start_app(input_file,filelist,filenames,filedict):
         res = get_radio_options(out)
         return [{'label': i, 'value': i} for i in res]
 
-
     @app.callback(
         Output('name1-radio', 'value'),
         Input('name1-radio', 'options'))
     def set_name1_radio_value(available_options):
         return available_options[0]['value']
-
 
     @app.callback(
         Output('name2-radio', 'options'),
@@ -177,13 +178,11 @@ def start_app(input_file,filelist,filenames,filedict):
         res = get_radio_options(out)
         return [{'label': i, 'value': i} for i in res]
 
-
     @app.callback(
         Output('name2-radio', 'value'),
         Input('name2-radio', 'options'))
     def set_name2_radio_value(available_options):
         return available_options[0]['value']
-
 
     @app.callback(
         Output('name3-radio', 'options'),
@@ -197,13 +196,11 @@ def start_app(input_file,filelist,filenames,filedict):
         res = get_radio_options(out)
         return [{'label': i, 'value': i} for i in res]
 
-
     @app.callback(
         Output('name3-radio', 'value'),
         Input('name3-radio', 'options'))
     def set_name3_radio_value(available_options):
         return available_options[0]['value']
-
 
     @app.callback(
         Output('caller', 'options'),
@@ -240,16 +237,16 @@ def start_app(input_file,filelist,filenames,filedict):
 
         return get_used_filters([path1, path2, path3])
 
-
     @app.callback(
-        Output('venn_diagram', 'src'),
+        # Output('venn_diagram', 'src'),
+        Output('venn_diagram', 'figure'),
         Input('name1', 'value'),
         Input('name1-radio', 'value'),
         Input('name2', 'value'),
         Input('name2-radio', 'value'),
         Input('name3', 'value'),
         Input('name3-radio', 'value'),
-        Input('caller', 'value'),)
+        Input('caller', 'value'), )
     def update_graph(name1, name1_radio, name2, name2_radio, name3, name3_radio, caller):
         path1 = filedict[name1]
         cromwell_workflow_id1 = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',
@@ -279,27 +276,82 @@ def start_app(input_file,filelist,filenames,filedict):
         AB_overlap, AC_overlap, BC_overlap, ABC_overlap, A_rest, B_rest, C_rest, AB_only, AC_only, BC_only = venn_diagram(
             [path1, path2, path3], caller)
 
-        sets = Counter()  # set order A, B, C
-        sets['100'] = A_rest  # 100 denotes A on, B off, C off
-        sets['010'] = B_rest  # 010 denotes A off, B on, C off
-        sets['001'] = C_rest  # 001 denotes A off, B off, C on
-        sets['110'] = AB_only  # 110 denotes A on, B on, C off
-        sets['101'] = AC_only  # 101 denotes A on, B off, C on
-        sets['011'] = BC_only  # 011 denotes A off, B on, C on
-        sets['111'] = ABC_overlap  # 011 denotes A on, B on, C on
-        labels = ('UA', 'UB', 'UC')
+        fig = go.Figure()
+        # Create text labels
+        fig.add_trace(go.Scatter(
+            x=[-0.25, 7.25, 3.5],
+            y=[1, 1, 7.5],
+            text=["SetA", "SetB", "SetC"],
+            mode="text",
+            textfont=dict(
+                color="black",
+                size=20,
+                family="Arail",
+            ),
+            name='Sets'
+        ))
+        # Create scatter trace of text labels
+        fig.add_trace(go.Scatter(
+            x=[1.5, 5.5, 3.5],
+            y=[ 1.5, 1.5, 6],
+            text=[A_rest, B_rest, C_rest],
+            mode="text",
+            textfont=dict(
+                color="black",
+                size=17,
+                family="Arail",
+            ),
+            name='only_trace'
+        ))
 
-        fig, ax1 = plt.subplots(1, 1)
-        # ax1 = plt.gca()
-        # veen3 parameter (A_rest, B_rest, AB_overlap, C_rest, AC_overlap, BC_overlap, ABC_overlap)
-        venn3(subsets=sets, set_labels=labels)
-        # venn2((ua,com,ub), set_labels=('UA', 'UB'))
-        ax1.set_title(
-            'AB_only=' + str(AB_only) + ',AC_only=' + str(AC_only) + ',BC_only=' + str(BC_only) + '\nABC_overlap=' + str(
-                ABC_overlap), y=-0.1)
-        out_url = fig_to_uri(fig)
+        fig.add_trace(go.Scatter(
+            x=[3.5, 2, 5, 3.5],
+            y=[1.5, 4.25, 4.25, 3.25],
+            text=[AB_only, AC_only, BC_only, ABC_overlap],
+            mode="text",
+            textfont=dict(
+                color="black",
+                size=14,
+                family="Arail",
+            ),
+            name='common_trace'
+        ))
 
-        return out_url
+        # Update axes properties
+        fig.update_xaxes(
+            showticklabels=False,
+            showgrid=False,
+            zeroline=False,
+        )
+
+        fig.update_yaxes(
+            showticklabels=False,
+            showgrid=False,
+            zeroline=False,
+            scaleanchor="x",
+            scaleratio=1,
+        )
+
+        # Add circles
+        fig.add_shape(type="circle",
+                      line_color="blue", fillcolor="blue",
+                      x0=-0.25, y0=0, x1=4.75, y1=5
+                      )
+        fig.add_shape(type="circle",
+                      line_color="gray", fillcolor="gray",
+                      x0=2.25, y0=0, x1=7.25, y1=5
+                      )
+        fig.add_shape(type="circle",
+                      line_color="yellow", fillcolor="yellow",
+                      x0=1, y0=2.25, x1=6, y1=7.25
+                      )
+        fig.update_shapes(opacity=0.3, xref="x", yref="y")
+
+        fig.update_layout(margin={'l': 40, 'b': 40, 't': 10, 'r': 0})      #,width=800, height=800
+
+        fig.layout.plot_bgcolor = 'rgba(0,0,0,0)'
+
+        return fig
 
 
     @app.callback(
@@ -344,7 +396,6 @@ def start_app(input_file,filelist,filenames,filedict):
                 strs += '\n  ' + keys + ': ' + values
         return strs
 
-
     @callback(
         Output('my_output', component_property='children'),
         # Input('name1-radio', 'options'),
@@ -374,7 +425,8 @@ def start_app(input_file,filelist,filenames,filedict):
             for i in df_res.columns:
                 if i != 'total':
                     columns.append(
-                        {"name": i, "id": i, "type": 'numeric', "format": Format(precision=2, scheme=Scheme.percentage)})
+                        {"name": i, "id": i, "type": 'numeric',
+                         "format": Format(precision=2, scheme=Scheme.percentage)})
                 else:
                     columns.append({"name": i, "id": i, "type": 'numeric'})
             children_list.append(
@@ -397,46 +449,6 @@ def start_app(input_file,filelist,filenames,filedict):
             children=children_list
         )
 
-
-    # @app.callback(
-    #     Output('output-state', 'children'),
-    #     Input('submit-val', 'n_clicks'),
-    #     State('path', 'value'))
-    # def add_new_vcf(n_clicks, path):
-    #     tmp = u'''
-    #             The Button has been pressed {} times,nothing has been added.
-    #         '''.format(n_clicks)
-    #     cromwell_workflow_id = re.search('[0-9|a-z]{8}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{4}-[0-9|a-z]{12}',path).group(0)
-    #     if os.path.exists(path):
-    #         filelist = load_filelist_id('stored_vcf_filelist.json')
-    #         if cromwell_workflow_id in filelist:
-    #             tmp = 'Sorry, the path has been added'
-    #         else:
-    #             filelist.append(path)
-    #             save_filelist(filelist)
-    #             data_prepare(filelist)
-    #             tmp = u'''
-    #                 {} has been added successfully.
-    #             '''.format(cromwell_workflow_id)
-    #     else:
-    #         tmp = 'The path deos not exists.'
-    #
-    #     return tmp
-
-
-    # @app.callback(
-    #     Output('name1', 'options'),
-    #     Output('name2', 'options'),
-    #     Input('submit-val', 'n_clicks'))
-    # def update_names(n_clicks):
-    #
-    #     name1_options = load_filelist_id('stored_vcf_filelist.json')
-    #
-    #     # if os.path.exists(path):
-    #     #     if path not in list(filedict.values()) and filename not in list(filedict.keys()):
-    #     #         name1_options += [filename]
-    #     return name1_options, name1_options
-
     return app
 
 
@@ -451,6 +463,5 @@ if __name__ == '__main__':
     filedict = load_input_dict(input_file)
     # first, prepare the data
     data_prepare(filelist)
-    app = start_app(input_file,filelist,filenames,filedict)
-    print('aaa')
-    app.run_server(host='0.0.0.0', port=8080, debug=False, dev_tools_silence_routes_logging=True)
+    app = start_app(input_file, filelist, filenames, filedict)
+    app.run_server(host='0.0.0.0', port=8080, debug=True, dev_tools_silence_routes_logging=True)
