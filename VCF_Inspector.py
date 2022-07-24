@@ -1,12 +1,8 @@
 from dash import Dash, html, dcc, Input, Output, State, dash_table, callback
-import plotly.express as px
 from utils import venn_diagram, chart, get_filters_dict, get_used_filters, data_prepare, load_input_paths, \
     load_input_names, load_input_dict, get_radio_options, name_to_dir_path, dir_to_file_path, draw_venn_figure
-import plotly.graph_objects as go
 from dash.dash_table.Format import Format, Scheme, Trim
 import dash_daq as daq
-import re
-import os
 import argparse
 
 parser = argparse.ArgumentParser(description="VCF inspector")
@@ -287,7 +283,7 @@ def update_description(name1, name1_radio, name2, name2_radio, name3, name3_radi
         if name3_radio == 'ProximityFiltered':
             path3 += 'call-snp_indel_proximity_filter/execution/output/ProximityFiltered.vcf'
         else:
-            path3 += 'call-depth_filter_' + name2_radio[:-21] + '/execution/somatic_depth_filter.output.vcf'
+            path3 += 'call-depth_filter_' + name3_radio[:-21] + '/execution/somatic_depth_filter.output.vcf'
         paths.append(path3)
 
     filters_dict = get_filters_dict(paths)
